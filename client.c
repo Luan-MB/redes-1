@@ -13,10 +13,8 @@ int main () {
 
     char *buffer = malloc(12);
 
-    while(1) {
-        printf("%ld\n", recv(socket, buffer, 12, 0));
-        printf("%s\n", buffer);
-    }
+    printf("%ld\n", recv(socket, buffer, 18, 0));
+    printf("%s\n", buffer);
 
     return 0;
 }

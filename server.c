@@ -10,8 +10,15 @@ int main () {
     }
 
     printf("Escutando...\n");
+
+    char msg[] = "hino do palmeiras";
     
-    printf("%ld\n", send(socket, "Oi alionco\n", 12, 0));
+    int retval;
+
+    if ((retval = send(socket, msg, 18, 0)) >= 0)
+        fprintf(stderr, "SEND (%ld bytes):\t", sizeof(msg));
+    else
+        perror("send()");
 
     return 0;
 }
