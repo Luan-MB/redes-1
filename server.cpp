@@ -18,6 +18,7 @@ int main () {
     unsigned int tamanhoPacote{msg.getTamanhoPacote()};
     
     msg.imprimeCamposMsg();
+    msg.calculaCrc();
     int retval;
 
     if ((retval = send(socket, pacote, tamanhoPacote, 0)) >= 0)

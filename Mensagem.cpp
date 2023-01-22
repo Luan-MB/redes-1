@@ -11,13 +11,9 @@ Mensagem::Mensagem(const unsigned int tamanho, const char *pacote)
     this->sequencia = ((pacote[1] & 0x3) >> 2)  | ((pacote[2] << 2) & 0x3);
     this->tamanho = pacote[2] & 0x3f;
 
-    unsigned int byte_index = 3;
+    memcpy(this->dados, &pacote[3], this->tamanho);  
 
-    for (int i=0; i<this->tamanho; ++i) {
-        this->dados[i] = pacote[byte_index++];
-    }   
-
-    this->crc = pacote[byte_index];
+    this->crc = pacote[tamanho-1];
 }
 
 Mensagem::Mensagem(const unsigned char tipo,
@@ -57,13 +53,22 @@ char *Mensagem::montaPacote() const {
     pacote[1] = (this->tipo << 2) | ((this->sequencia << 2) & 0x3);
     pacote[2] = ((this->sequencia & 0x3) << 6) | (this->tamanho);
 
-    unsigned int byte_index = 3;
+    memcpy(&pacote[3], this->dados, this->tamanho);
 
-    for (int i=0; i<this->tamanho; ++i) {
-        pacote[byte_index++] = this->dados[i];
-    }
-
-    pacote[byte_index] = this->crc;
+    pacote[3 + this->tamanho] = this->crc;
     
     return pacote;
+}
+
+void Mensagem::calculaCrc() const {
+    
+    char dadosPadding[this->tamanho + 1];
+
+    memcpy(dadosPadding, this->dados, this->tamanho);
+
+    std::cout << "Dados com padding: ";
+    for (char byte: dadosPadding) {
+        std::cout << std::bitset<8>(byte);
+    }
+    std::cout << std::endl;
 }
