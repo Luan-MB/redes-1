@@ -1,4 +1,5 @@
 #include "raw_socket.h"
+#include "Mensagem.hpp"
 
 int main () {
 
@@ -12,8 +13,14 @@ int main () {
 
     char *buffer = (char *) malloc(67);
 
-    printf("%ld\n", recv(socket, buffer, 67, 0));
-    printf("%s\n", buffer);
+    int retval;
+
+    if ((retval = recv(socket, buffer, 67, 0)) > 0) {
+        fprintf(stderr, "RECV (%d bytes):\n", retval);
+        Mensagem msg{retval, buffer};
+        msg.imprimeCamposMsg();
+        msg.imprimeDados();
+    }
 
     return 0;
 }

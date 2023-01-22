@@ -3,10 +3,27 @@
 #include <bitset>
 #include <bits/stdc++.h>
 
-Mensagem::Mensagem(unsigned char tipo,
-                unsigned char sequencia,
-                unsigned char tamanho,
-                char *dados)
+Mensagem::Mensagem(const unsigned int tamanho, const char *pacote)
+    : dados{0} 
+{
+    this->marcadorInicio = pacote[0] & 0xff;
+    this->tipo = (pacote[1] >> 2) & 0x3f;
+    this->sequencia = ((pacote[1] & 0x3) >> 2)  | ((pacote[2] << 2) & 0x3);
+    this->tamanho = pacote[2] & 0x3f;
+
+    unsigned int byte_index = 3;
+
+    for (int i=0; i<this->tamanho; ++i) {
+        this->dados[i] = pacote[byte_index++];
+    }   
+
+    this->crc = pacote[byte_index];
+}
+
+Mensagem::Mensagem(const unsigned char tipo,
+                const unsigned char sequencia,
+                const unsigned char tamanho,
+                const char *dados)
     : dados{0}
 {
     this->marcadorInicio = 0x7e;
@@ -17,20 +34,29 @@ Mensagem::Mensagem(unsigned char tipo,
     this->crc =  0xff;
 }
 
-void Mensagem::imprimeCamposMsg() {
-    std::cout << std::bitset<8>(this->marcadorInicio);
-    std::cout << std::bitset<6>(this->tipo);
-    std::cout << std::bitset<4>(this->sequencia);
-    std::cout << std::bitset<6>(this->tamanho);
+void Mensagem::imprimeDados() const {
+    for (int i=0; i<this->tamanho; ++i) {
+        printf("%c", this->dados[i]);
+    }
+    printf("\n");
+}
+
+void Mensagem::imprimeCamposMsg() const {
+    std::cout << "Marcador inicio: " << std::bitset<8>(this->marcadorInicio) << std::endl;
+    std::cout << "Tipo: " << std::bitset<6>(this->tipo) << std::endl;
+    std::cout << "Sequencia: " << std::bitset<4>(this->sequencia) << std::endl;
+    std::cout << "Tamanho: " << std::bitset<6>(this->tamanho) << std::endl;
     
+    std::cout << "Dados: ";
     for (char byte: this->dados) {
         std::cout << std::bitset<8>(byte);
     }
+    std::cout << std::endl;
 
-    std::cout << std::bitset<8>(this->crc) << std::endl;
+    std::cout << "Crc: " << std::bitset<8>(this->crc) << std::endl;
 }
 
-char *Mensagem::montaPacote() {
+char *Mensagem::montaPacote() const {
     std::cout << this->tamanho << std::endl;
     char *pacote = (char *) malloc(4 + this->tamanho);
     

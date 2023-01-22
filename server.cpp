@@ -1,7 +1,6 @@
 #include "raw_socket.h"
 #include "Mensagem.hpp"
 
-
 int main () {
 
     int socket = cria_raw_socket("lo");
@@ -12,8 +11,8 @@ int main () {
 
     printf("Escutando...\n");
 
-    char txt[] = "hino do palmeiras😁";
-    Mensagem msg{Texto, 0, 22, txt};
+    char txt[] = "hino do palmeiras😁 áõèç";
+    Mensagem msg{Texto, 0, 31, txt};
 
     char *pacote{msg.montaPacote()};
     unsigned int tamanhoPacote{msg.getTamanhoPacote()};
@@ -22,7 +21,7 @@ int main () {
     int retval;
 
     if ((retval = send(socket, pacote, tamanhoPacote, 0)) >= 0)
-        fprintf(stderr, "SEND (%d bytes):\t", tamanhoPacote);
+        fprintf(stderr, "SEND (%d bytes):\t", retval);
     else
         perror("send()");
 

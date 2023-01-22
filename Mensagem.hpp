@@ -16,12 +16,15 @@ enum Tipos {
 
 class Mensagem {
     public:
-        Mensagem(unsigned char, unsigned char, unsigned char, char *);
+        Mensagem(const unsigned int, const char *);
+        Mensagem(const unsigned char, const unsigned char, const unsigned char, const char *);
 
-        unsigned int getTamanhoPacote() {return this->tamanho + 4;};
+        unsigned int getTamanhoPacote() const {return this->tamanho + 4;};
 
-        void imprimeCamposMsg();
-        char *montaPacote();
+        void imprimeDados() const;
+
+        void imprimeCamposMsg() const;
+        char *montaPacote() const;
 
     private:
         unsigned char marcadorInicio: 8;
