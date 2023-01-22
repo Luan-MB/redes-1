@@ -21,8 +21,6 @@ class Mensagem {
 
         unsigned int getTamanhoPacote() const {return this->tamanho + 4;};
 
-        void imprimeDados() const;
-
         void imprimeCamposMsg() const;
         char *montaPacote() const;
 

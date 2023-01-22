@@ -34,13 +34,6 @@ Mensagem::Mensagem(const unsigned char tipo,
     this->crc =  0xff;
 }
 
-void Mensagem::imprimeDados() const {
-    for (int i=0; i<this->tamanho; ++i) {
-        printf("%c", this->dados[i]);
-    }
-    printf("\n");
-}
-
 void Mensagem::imprimeCamposMsg() const {
     std::cout << "Marcador inicio: " << std::bitset<8>(this->marcadorInicio) << std::endl;
     std::cout << "Tipo: " << std::bitset<6>(this->tipo) << std::endl;

@@ -21,7 +21,7 @@ int main () {
     int retval;
 
     if ((retval = send(socket, pacote, tamanhoPacote, 0)) >= 0)
-        fprintf(stderr, "SEND (%d bytes):\t", retval);
+        fprintf(stderr, "SEND (%d bytes):\n", retval);
     else
         perror("send()");
 

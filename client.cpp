@@ -15,11 +15,14 @@ int main () {
 
     int retval;
 
-    if ((retval = recv(socket, buffer, 67, 0)) > 0) {
-        fprintf(stderr, "RECV (%d bytes):\n", retval);
-        Mensagem msg{retval, buffer};
-        msg.imprimeCamposMsg();
-        msg.imprimeDados();
+    while (true) {
+        if ((retval = recv(socket, buffer, 67, 0)) > 0) {
+            if (buffer[0] == 0x7e) {
+                fprintf(stderr, "RECV (%d bytes):\n", retval);
+                Mensagem msg{retval, buffer};
+                msg.imprimeCamposMsg();
+            }
+        }
     }
 
     return 0;
