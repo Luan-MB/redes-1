@@ -1,5 +1,4 @@
 #include "raw_socket.h"
-#include <stdio.h>
 
 int main () {
 
@@ -11,9 +10,9 @@ int main () {
 
     printf("Escutando...\n");
 
-    char *buffer = malloc(12);
+    char *buffer = (char *) malloc(67);
 
-    printf("%ld\n", recv(socket, buffer, 18, 0));
+    printf("%ld\n", recv(socket, buffer, 67, 0));
     printf("%s\n", buffer);
 
     return 0;

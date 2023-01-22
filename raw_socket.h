@@ -8,6 +8,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-int cria_raw_socket(char*);
+int cria_raw_socket(const char*);
 
 #endif
