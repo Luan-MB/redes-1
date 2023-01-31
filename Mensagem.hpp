@@ -26,7 +26,6 @@ class Mensagem {
 
         void calculaCrc() const;
 
-    private:
         unsigned char marcadorInicio: 8;
         unsigned char tipo: 6;
         unsigned char sequencia: 4;

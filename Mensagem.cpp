@@ -38,7 +38,7 @@ void Mensagem::imprimeCamposMsg() const {
     
     std::cout << "Dados: ";
     for (char byte: this->dados) {
-        std::cout << std::bitset<8>(byte);
+        std::cout << std::bitset<8>(byte) << ' ';
     }
     std::cout << std::endl;
 
