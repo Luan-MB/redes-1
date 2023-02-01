@@ -15,39 +15,16 @@ int main () {
     char *buffer = (char *) malloc(67);
 
     unsigned int retval;
+    std::string message;
 
     while (true) {
         if ((retval = recv(socket, buffer, 67, 0)) > 0) {
             if (buffer[0] == 0x7e) {
                 fprintf(stderr, "RECV (%d bytes):\n", retval);
                 Mensagem msg{retval, buffer};
-                
-                if (msg.tipo == Inicio) {
 
-                    std::string message;
-
-                    while (true) {
-                        if ((retval = recv(socket, buffer, 67, 0)) > 0) {
-                            if (buffer[0] == 0x7e) {
-                                fprintf(stderr, "RECV (%d bytes):\n", retval);
-                                Mensagem msg{retval, buffer};
-
-                                if (msg.tipo == Texto) {
-                                    std::string subMessage;
-
-                                    memcpy(&subMessage, &msg.dados[3], msg.tamanho);  
-
-                                    message += subMessage;
-                                } else if (msg.tipo == Fim) {
-                                    break;
-                                }
-
-                            }
-                        }
-                    }
-
-                    std::cout << message;
-                }
+                std::string message = msg.dados;
+                std::cout << message << std::endl;
             }
         }
     }

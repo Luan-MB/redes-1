@@ -16,19 +16,31 @@ int main () {
     
     std::getline(std::cin, message);
 
-    std::cout << message.length() << std::endl;
+    unsigned int num_packs{((unsigned int) message.length() / 63) + 1};
+    unsigned int remaining_size{(unsigned int) message.length()};
 
-    Mensagem msg{Texto, 0, (unsigned char) message.length(), message.c_str()};
+    for (int i=0; i<num_packs; ++i) {
 
-    char *pacote{msg.montaPacote()};
-    unsigned int tamanhoPacote{msg.getTamanhoPacote()};
+        Mensagem *msg;
 
-    int retval;
+        if (remaining_size > 63) {
+            std::string message_part{message.substr(63*i, 63)};
+            msg = new Mensagem{Texto, (unsigned char) i, 63, message_part.c_str()};
+            remaining_size -= 63;
+        } else {
+            std::string message_part{message.substr(63*i, remaining_size)};
+            msg = new Mensagem{Texto, (unsigned char) i, (unsigned char) remaining_size, message_part.c_str()};
+        }
+        
+        int retval;
 
-    if ((retval = send(socket, pacote, tamanhoPacote, 0)) >= 0)
-        fprintf(stderr, "SEND (%d bytes):\n", retval);
-    else
-        perror("send()");
+        if ((retval = send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0)) >= 0)
+            fprintf(stderr, "SEND (%d bytes):\n", retval);
+        else
+            perror("send()");
+
+        delete msg;
+    }
 
     return 0;
 }
