@@ -3,13 +3,16 @@
 #include <bitset>
 #include <bits/stdc++.h>
 
+Mensagem::Mensagem(const unsigned char tipo, const unsigned char tamanho)
+    : marcadorInicio{0x7e}, tipo{tipo}, dados{0}, tamanho{tamanho}
+{}
+
 Mensagem::Mensagem(const unsigned int tamanho, const char *pacote)
     : dados{0} 
 {
     this->marcadorInicio = pacote[0] & 0xff;
     this->tipo = (pacote[1] >> 2) & 0x3f;
-    this->sequencia = ((pacote[1] & 0x3))  | ((pacote[2] << 2) & 0x3);
-    std::cout << std::bitset<8>(pacote[2]) << std::endl;
+    this->sequencia = ((pacote[1] & 0x3) << 2)  | ((pacote[2] >> 6) & 0x3);
     this->tamanho = pacote[2] & 0x3f;
 
     memcpy(this->dados, &pacote[3], this->tamanho);  
@@ -27,7 +30,7 @@ Mensagem::Mensagem(const unsigned char tipo,
     this->tipo = tipo;
     this->sequencia = sequencia,
     this->tamanho = tamanho,
-    memcpy(this->dados, dados, tamanho);
+    memcpy(this->dados, &dados[0], tamanho);
     this->crc =  0xff;
 }
 
@@ -50,7 +53,7 @@ char *Mensagem::montaPacote() const {
     char *pacote = (char *) malloc(4 + this->tamanho);
     
     pacote[0] = this->marcadorInicio;
-    pacote[1] = (this->tipo << 2) | ((this->sequencia << 2) & 0x3);
+    pacote[1] = (this->tipo << 2) | ((this->sequencia >> 2) & 0x3);
     pacote[2] = ((this->sequencia & 0x3) << 6) | (this->tamanho);
 
     std::cout << std::bitset<8>(pacote[0]) << std::endl;

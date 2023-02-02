@@ -12,6 +12,8 @@ int main () {
 
     printf("Escutando...\n");
 
+    int retval;
+
     std::string message;
     
     std::getline(std::cin, message);
@@ -20,6 +22,12 @@ int main () {
     unsigned int remaining_size{(unsigned int) message.length()};
 
     std::cout << num_packs << std::endl;
+
+    Mensagem inicioTransmissao{Inicio, 16};
+    if ((retval = send(socket, inicioTransmissao.montaPacote(), inicioTransmissao.getTamanhoPacote(), 0)) >= 0) {
+        fprintf(stderr, "SEND (%d bytes):\n", retval);
+    } else
+        perror("send()");
 
     for (int i=0; i<num_packs; ++i) {
 
@@ -34,16 +42,18 @@ int main () {
             msg = new Mensagem{Texto, (unsigned char) i, (unsigned char) remaining_size, message_part.c_str()};
         }
 
-        int retval;
-
-        // msg->imprimeCamposMsg();
-
         if ((retval = send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0)) >= 0) {
             fprintf(stderr, "SEND (%d bytes):\n", retval);
         } else
             perror("send()");
         delete msg;
     }
+
+    Mensagem fimTransmissao{Fim, 16};
+    if ((retval = send(socket, fimTransmissao.montaPacote(), fimTransmissao.getTamanhoPacote(), 0)) >= 0) {
+        fprintf(stderr, "SEND (%d bytes):\n", retval);
+    } else
+        perror("send()");
 
     return 0;
 }
