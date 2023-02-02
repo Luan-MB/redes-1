@@ -16,29 +16,32 @@ int main () {
     
     std::getline(std::cin, message);
 
-    unsigned int num_packs{((unsigned int) message.length() / 63) + 1};
+    unsigned int num_packs{((unsigned int) message.length() / MAX_DATA_SIZE) + 1};
     unsigned int remaining_size{(unsigned int) message.length()};
+
+    std::cout << num_packs << std::endl;
 
     for (int i=0; i<num_packs; ++i) {
 
         Mensagem *msg;
 
-        if (remaining_size > 63) {
-            std::string message_part{message.substr(63*i, 63)};
-            msg = new Mensagem{Texto, (unsigned char) i, 63, message_part.c_str()};
-            remaining_size -= 63;
+        if (remaining_size > MAX_DATA_SIZE) {
+            std::string message_part{message.substr(MAX_DATA_SIZE*i, MAX_DATA_SIZE)};
+            msg = new Mensagem{Texto, (unsigned char) i, MAX_DATA_SIZE, message_part.c_str()};
+            remaining_size -= MAX_DATA_SIZE;
         } else {
-            std::string message_part{message.substr(63*i, remaining_size)};
+            std::string message_part{message.substr(MAX_DATA_SIZE*i, remaining_size)};
             msg = new Mensagem{Texto, (unsigned char) i, (unsigned char) remaining_size, message_part.c_str()};
         }
-        
+
         int retval;
 
-        if ((retval = send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0)) >= 0)
-            fprintf(stderr, "SEND (%d bytes):\n", retval);
-        else
-            perror("send()");
+        // msg->imprimeCamposMsg();
 
+        if ((retval = send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0)) >= 0) {
+            fprintf(stderr, "SEND (%d bytes):\n", retval);
+        } else
+            perror("send()");
         delete msg;
     }
 

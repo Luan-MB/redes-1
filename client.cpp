@@ -17,17 +17,21 @@ int main () {
     unsigned int retval;
     std::string message;
 
+    unsigned char seq{0x0};
+
     while (true) {
         if ((retval = recv(socket, buffer, 67, 0)) > 0) {
             if (buffer[0] == 0x7e) {
+                
                 fprintf(stderr, "RECV (%d bytes):\n", retval);
-                Mensagem msg{retval, buffer};
+                Mensagem *msg = new Mensagem{retval, buffer};
 
-                std::string message = msg.dados;
-                std::cout << message << std::endl;
+                msg->imprimeCamposMsg();
             }
         }
     }
+
+    std::cout << message << std::endl;
 
     return 0;
 }

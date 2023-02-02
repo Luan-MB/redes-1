@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+#define MAX_DATA_SIZE 63
+
 enum Tipos {
     Texto = 0x01,
     Midia = 0x10,
@@ -30,7 +32,7 @@ class Mensagem {
         unsigned char tipo: 6;
         unsigned char sequencia: 4;
         unsigned char tamanho: 6;
-        char dados[63];
+        char dados[MAX_DATA_SIZE];
         unsigned char crc: 8;
 };
 

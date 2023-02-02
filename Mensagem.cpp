@@ -8,7 +8,8 @@ Mensagem::Mensagem(const unsigned int tamanho, const char *pacote)
 {
     this->marcadorInicio = pacote[0] & 0xff;
     this->tipo = (pacote[1] >> 2) & 0x3f;
-    this->sequencia = ((pacote[1] & 0x3) >> 2)  | ((pacote[2] << 2) & 0x3);
+    this->sequencia = ((pacote[1] & 0x3))  | ((pacote[2] << 2) & 0x3);
+    std::cout << std::bitset<8>(pacote[2]) << std::endl;
     this->tamanho = pacote[2] & 0x3f;
 
     memcpy(this->dados, &pacote[3], this->tamanho);  
@@ -46,12 +47,15 @@ void Mensagem::imprimeCamposMsg() const {
 }
 
 char *Mensagem::montaPacote() const {
-    std::cout << this->tamanho << std::endl;
     char *pacote = (char *) malloc(4 + this->tamanho);
     
     pacote[0] = this->marcadorInicio;
     pacote[1] = (this->tipo << 2) | ((this->sequencia << 2) & 0x3);
     pacote[2] = ((this->sequencia & 0x3) << 6) | (this->tamanho);
+
+    std::cout << std::bitset<8>(pacote[0]) << std::endl;
+    std::cout << std::bitset<8>(pacote[1]) << std::endl;
+    std::cout << std::bitset<8>(pacote[2]) << std::endl;
 
     memcpy(&pacote[3], this->dados, this->tamanho);
 
