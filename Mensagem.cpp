@@ -31,7 +31,7 @@ Mensagem::Mensagem(const unsigned char tipo,
     this->sequencia = sequencia,
     this->tamanho = tamanho,
     memcpy(this->dados, &dados[0], tamanho);
-    this->crc =  0xff;
+    this->crc =  this->calculaCrc();
 }
 
 void Mensagem::imprimeCamposMsg() const {
@@ -56,10 +56,6 @@ char *Mensagem::montaPacote() const {
     pacote[1] = (this->tipo << 2) | ((this->sequencia >> 2) & 0x3);
     pacote[2] = ((this->sequencia & 0x3) << 6) | (this->tamanho);
 
-    std::cout << std::bitset<8>(pacote[0]) << std::endl;
-    std::cout << std::bitset<8>(pacote[1]) << std::endl;
-    std::cout << std::bitset<8>(pacote[2]) << std::endl;
-
     memcpy(&pacote[3], this->dados, this->tamanho);
 
     pacote[3 + this->tamanho] = this->crc;
@@ -67,15 +63,22 @@ char *Mensagem::montaPacote() const {
     return pacote;
 }
 
-void Mensagem::calculaCrc() const {
+unsigned char Mensagem::calculaCrc() const {
     
-    char dadosPadding[this->tamanho + 1];
-
-    memcpy(dadosPadding, this->dados, this->tamanho);
-
-    std::cout << "Dados com padding: ";
-    for (char byte: dadosPadding) {
-        std::cout << std::bitset<8>(byte);
+    char crc = 0x00;
+    char extract;
+    const char *data{this->dados};
+    char sum;
+    for(int i=0;i<this->tamanho;i++) {
+        extract = *data;
+        for (char tempI = 8; tempI; tempI--) {
+            sum = (crc ^ extract) & 0x01;
+            crc >>= 1;
+            if (sum)
+                crc ^= 0x19B;
+            extract >>= 1;
+        }
+        data++;
     }
-    std::cout << std::endl;
+   return crc;
 }

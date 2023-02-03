@@ -27,7 +27,7 @@ class Mensagem {
         void imprimeCamposMsg() const;
         char *montaPacote() const;
 
-        void calculaCrc() const;
+        unsigned char calculaCrc() const;
 
         unsigned char marcadorInicio: 8;
         unsigned char tipo: 6;

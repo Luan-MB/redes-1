@@ -22,7 +22,10 @@ int main () {
         if ((retval = recv(socket, buffer, 67, 0)) > 0) {
             if (buffer[0] == 0x7e) {
                 
+                #ifdef DEBUG
                 fprintf(stderr, "RECV (%d bytes):\n", retval);
+                #endif
+                
                 Mensagem *msg = new Mensagem{retval, buffer};
 
                 if (msg->tipo == Inicio) {
@@ -34,7 +37,11 @@ int main () {
 
                         if ((retval = recv(socket, buffer, 67, 0)) > 0) {
                             if (buffer[0] == 0x7e) {
+                                
+                                #ifdef DEBUG
                                 fprintf(stderr, "RECV (%d bytes):\n", retval);
+                                #endif
+
                                 Mensagem *streamMsg = new Mensagem{retval, buffer};
 
                                 if ((streamMsg->tipo == Texto) && (streamMsg->sequencia == seq)) {

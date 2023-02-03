@@ -42,6 +42,8 @@ int main () {
             msg = new Mensagem{Texto, (unsigned char) i, (unsigned char) remaining_size, message_part.c_str()};
         }
 
+        std::cout << msg->crc << std::endl;
+
         if ((retval = send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0)) >= 0) {
             fprintf(stderr, "SEND (%d bytes):\n", retval);
         } else
