@@ -5,7 +5,9 @@
 
 Mensagem::Mensagem(const unsigned char tipo, const unsigned char tamanho)
     : marcadorInicio{0x7e}, tipo{tipo}, dados{0}, tamanho{tamanho}
-{}
+{
+    this->crc = this->calculaCrc();
+}
 
 Mensagem::Mensagem(const unsigned int tamanho, const char *pacote)
     : dados{0} 
@@ -24,12 +26,8 @@ Mensagem::Mensagem(const unsigned char tipo,
                 const unsigned char sequencia,
                 const unsigned char tamanho,
                 const char *dados)
-    : dados{0}
+    : marcadorInicio{0x7e}, tipo{tipo}, dados{0}, tamanho{tamanho}
 {
-    this->marcadorInicio = 0x7e;
-    this->tipo = tipo;
-    this->sequencia = sequencia,
-    this->tamanho = tamanho,
     memcpy(this->dados, &dados[0], tamanho);
     this->crc =  this->calculaCrc();
 }
@@ -75,7 +73,7 @@ unsigned char Mensagem::calculaCrc() const {
             sum = (crc ^ extract) & 0x01;
             crc >>= 1;
             if (sum)
-                crc ^= 0x19B;
+                crc ^= 0x9B;
             extract >>= 1;
         }
         data++;

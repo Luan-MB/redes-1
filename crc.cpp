@@ -8,7 +8,7 @@ char CRC8(const char *data, int length)  {
             sum = (crc ^ extract) & 0x01;
             crc >>= 1;
             if (sum)
-                crc ^= 0x19B;
+                crc ^= 0x9B;
             extract >>= 1;
         }
         data++;

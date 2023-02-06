@@ -44,16 +44,21 @@ int main () {
 
                                 Mensagem *streamMsg = new Mensagem{retval, buffer};
 
-                                if ((streamMsg->tipo == Texto) && (streamMsg->sequencia == seq)) {
-                                    std::string messagePart = streamMsg->dados;
-                                    message += messagePart.substr(0, streamMsg->tamanho);
-                                    seq = seq + 1;
-                                    delete streamMsg;
+                                if (streamMsg->crc == streamMsg->calculaCrc()) {
 
-                                } else if (streamMsg->tipo == Fim) {
-                                    delete streamMsg;
-                                    break;
+                                    if ((streamMsg->tipo == Texto) && (streamMsg->sequencia == seq)) {
+                                        std::string messagePart = streamMsg->dados;
+                                        message += messagePart.substr(0, streamMsg->tamanho);
+                                        seq = seq + 1;
+                                        delete streamMsg;
+
+                                    } else if (streamMsg->tipo == Fim) {
+                                        delete streamMsg;
+                                        break;
+                                    }
                                 }
+
+                                
                             }
                         }
                     }
