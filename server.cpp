@@ -1,6 +1,7 @@
 #include "raw_socket.h"
 #include "Mensagem.hpp"
 #include <string>
+#include <stdio.h>
 
 int main () {
 
@@ -15,8 +16,10 @@ int main () {
     int retval;
 
     std::string message;
+    char buffer[100];
     
-    std::getline(std::cin, message);
+    while (fgets(buffer, 100, stdin))
+        message += buffer;
 
     unsigned int num_packs{((unsigned int) message.length() / MAX_DATA_SIZE) + 1};
     unsigned int remaining_size{(unsigned int) message.length()};
@@ -35,11 +38,11 @@ int main () {
 
         if (remaining_size > MAX_DATA_SIZE) {
             std::string message_part{message.substr(MAX_DATA_SIZE*i, MAX_DATA_SIZE)};
-            msg = new Mensagem{Texto, (unsigned char) i, MAX_DATA_SIZE, message_part.c_str()};
+            msg = new Mensagem{Texto, (unsigned char) (i % 16), MAX_DATA_SIZE, message_part.c_str()};
             remaining_size -= MAX_DATA_SIZE;
         } else {
             std::string message_part{message.substr(MAX_DATA_SIZE*i, remaining_size)};
-            msg = new Mensagem{Texto, (unsigned char) i, (unsigned char) remaining_size, message_part.c_str()};
+            msg = new Mensagem{Texto, (unsigned char) (i % 16), (unsigned char) remaining_size, message_part.c_str()};
         }
 
         if ((retval = send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0)) >= 0) {

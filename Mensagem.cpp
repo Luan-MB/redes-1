@@ -4,7 +4,7 @@
 #include <bits/stdc++.h>
 
 Mensagem::Mensagem(const unsigned char tipo, const unsigned char tamanho)
-    : marcadorInicio{0x7e}, tipo{tipo}, dados{0}, tamanho{tamanho}
+    : marcadorInicio{0x7e}, tipo{tipo}, sequencia{0x0}, dados{0}, tamanho{tamanho}
 {
     this->crc = this->calculaCrc();
 }
@@ -26,7 +26,7 @@ Mensagem::Mensagem(const unsigned char tipo,
                 const unsigned char sequencia,
                 const unsigned char tamanho,
                 const char *dados)
-    : marcadorInicio{0x7e}, tipo{tipo}, dados{0}, tamanho{tamanho}
+    : marcadorInicio{0x7e}, tipo{tipo}, sequencia{sequencia}, dados{0}, tamanho{tamanho}
 {
     memcpy(this->dados, &dados[0], tamanho);
     this->crc =  this->calculaCrc();
