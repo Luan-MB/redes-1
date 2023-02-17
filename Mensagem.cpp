@@ -5,12 +5,10 @@
 
 Mensagem::Mensagem(const unsigned char tipo, const unsigned char tamanho)
     : marcadorInicio{0x7e}, tipo{tipo}, sequencia{0x0}, dados{0}, tamanho{tamanho}
-{
-    this->crc = this->calculaCrc();
-}
+{}
 
 Mensagem::Mensagem(const unsigned int tamanho, const char *pacote)
-    : dados{0} 
+    : dados{0}
 {
     this->marcadorInicio = pacote[0] & 0xff;
     this->tipo = (pacote[1] >> 2) & 0x3f;
@@ -26,10 +24,10 @@ Mensagem::Mensagem(const unsigned char tipo,
                 const unsigned char sequencia,
                 const unsigned char tamanho,
                 const char *dados)
-    : marcadorInicio{0x7e}, tipo{tipo}, sequencia{sequencia}, dados{0}, tamanho{tamanho}
+    : marcadorInicio{0x7e}, tipo{tipo}, sequencia{sequencia}, tamanho{tamanho}, dados{0}
 {
+    if (tamanho < 16) this->tamanho = 16;
     memcpy(this->dados, &dados[0], tamanho);
-    this->crc =  this->calculaCrc();
 }
 
 void Mensagem::imprimeCamposMsg() const {
@@ -44,7 +42,7 @@ void Mensagem::imprimeCamposMsg() const {
     }
     std::cout << std::endl;
 
-    std::cout << "Crc: " << std::bitset<8>(this->crc) << std::endl;
+    std::cout << "Crc: " << std::bitset<8>(this->crc) << std::endl << std::endl;
 }
 
 char *Mensagem::montaPacote() const {
@@ -59,24 +57,4 @@ char *Mensagem::montaPacote() const {
     pacote[3 + this->tamanho] = this->crc;
     
     return pacote;
-}
-
-unsigned char Mensagem::calculaCrc() const {
-    
-    char crc = 0x00;
-    char extract;
-    const char *data{this->dados};
-    char sum;
-    for(int i=0;i<this->tamanho;i++) {
-        extract = *data;
-        for (char tempI = 8; tempI; tempI--) {
-            sum = (crc ^ extract) & 0x01;
-            crc >>= 1;
-            if (sum)
-                crc ^= 0x9B;
-            extract >>= 1;
-        }
-        data++;
-    }
-   return crc;
 }
