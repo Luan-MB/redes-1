@@ -3,12 +3,6 @@
 #include <bitset>
 #include <bits/stdc++.h>
 
-Mensagem::Mensagem(const unsigned char tipo, const unsigned char tamanho)
-    : marcadorInicio{0x7e}, tipo{tipo}, sequencia{0x0}, dados{0}, tamanho{tamanho}
-{
-    this->crc = this->crc8();
-}
-
 Mensagem::Mensagem(const unsigned int tamanho, const char *pacote)
     : dados{0}
 {
@@ -21,6 +15,14 @@ Mensagem::Mensagem(const unsigned int tamanho, const char *pacote)
 
     this->crc = pacote[tamanho-1];
 }
+
+Mensagem::Mensagem(const unsigned char tipo, const unsigned char tamanho)
+    : marcadorInicio{0x7e}, tipo{tipo}, sequencia{0x0}, dados{0}, tamanho{tamanho}, crc{0x0}
+{}
+
+Mensagem::Mensagem(const unsigned char tipo, const unsigned char sequencia, const unsigned char tamanho)
+    : marcadorInicio{0x7e}, tipo{tipo}, sequencia{0x0}, dados{0}, tamanho{tamanho}, crc{0x0}
+{}
 
 Mensagem::Mensagem(const unsigned char tipo,
                 const unsigned char sequencia,

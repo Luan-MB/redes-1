@@ -18,8 +18,9 @@ enum Tipos {
 
 class Mensagem {
     public:
-        Mensagem(const unsigned char, const unsigned char);
         Mensagem(const unsigned int, const char *);
+        Mensagem(const unsigned char, const unsigned char);
+        Mensagem(const unsigned char, const unsigned char, const unsigned char);
         Mensagem(const unsigned char, const unsigned char, const unsigned char, const char *);
 
         unsigned int getTamanhoPacote() const {return this->tamanho + 4;};

@@ -18,10 +18,9 @@ int main () {
 
     unsigned int retval;
     unsigned char seq{0x0};
-    long long n{0};
 
-    FILE *arq = fopen("vascoletra.txt", "wb");
-    Mensagem *msg;
+    FILE *arq = fopen("vasco.txt", "wb");
+    Mensagem *msg, *response;
 
     while (true) {
         if ((retval = recv(socket, buffer, 67, 0)) > 0) {
@@ -33,17 +32,28 @@ int main () {
                 
                 msg = new Mensagem{retval, buffer};
                 
-                if ((msg->tipo == Dados) && (msg->sequencia == seq)) {
+                if (msg->tipo == Dados) {
 
-                    unsigned char crc = msg->crc8();
-                    if (crc != msg->crc) {
-                        std::cout << "Crc original: " << std::bitset<8>(msg->crc) << std::endl << std::endl;
-                        std::cout << "Crc falso: " << std::bitset<8>(crc) << std::endl << std::endl;
+                    if (msg->sequencia == seq) {
+                        unsigned char crc = msg->crc8();
+                        if (crc != msg->crc) {
+                            std::cout << "Crc original: " << std::bitset<8>(msg->crc) << std::endl << std::endl;
+                            std::cout << "Crc falso: " << std::bitset<8>(crc) << std::endl << std::endl;
+                        }
+
+                        fwrite(msg->dados, 1, msg->tamanho, arq);
+                        response = new Mensagem{Ack, msg->sequencia, 16};
+                        send(socket, response->montaPacote(), response->getTamanhoPacote(), 0);
+                        std::cout << "Enviou Ack do " << std::bitset<4>(response->sequencia) << std::endl;
+                        seq = (seq + 1) % 16;
+
+                        delete response;
+                    } else {
+                        response = new Mensagem{Nack, seq, 16};
+                        send(socket, response->montaPacote(), response->getTamanhoPacote(), 0);
+                        delete response;
                     }
 
-                    std::cout << fwrite(msg->dados, 1, msg->tamanho, arq) << std::endl;
-                    seq = ((seq + 1) % 16);
-                    n++;
                     delete msg;
 
                 } else if (msg->tipo == Fim) {
@@ -52,10 +62,9 @@ int main () {
                 }
             }
         }
-
     }
 
     fclose(arq);
-    std::cout << n << std::endl;
+
     return 0;
 }

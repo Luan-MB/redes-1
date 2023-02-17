@@ -17,23 +17,24 @@ int main (int argc, char **argv) {
 
     printf("Escutando...\n");
 
-    char buffer[3780];
+    char send_buffer[3780];
     size_t size;
-    int retval;
+    unsigned int retval;
+
+    char *recv_buffer = (char *) malloc(67);
 
     FILE *arq = fopen(argv[1], "rb");
-    long long n{0};
 
-    Mensagem *msg;
+    Mensagem *msg, *response;
     unsigned char seq{0x0};
     char sub_buffer[MAX_DATA_SIZE];
     unsigned int i;
     
-    while (size = fread(buffer, 1, 3780, arq)) {
+    while (size = fread(send_buffer, 1, 3780, arq)) {
         unsigned int n_packs = (size / MAX_DATA_SIZE);
 
         for (i=0; i<n_packs; ++i) {
-            memcpy(sub_buffer, &buffer[MAX_DATA_SIZE * i], MAX_DATA_SIZE);
+            memcpy(sub_buffer, &send_buffer[MAX_DATA_SIZE * i], MAX_DATA_SIZE);
             msg = new Mensagem{Dados, seq, MAX_DATA_SIZE, sub_buffer};
 
             if ((retval = send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0)) >= 0) {
@@ -41,19 +42,31 @@ int main (int argc, char **argv) {
             } else
                 perror("send()");
 
+            while (true) {
+                if ((retval = recv(socket, recv_buffer, 67, 0)) > 0) {
+                    if (recv_buffer[0] == 0x7e) {
+                        response = new Mensagem{retval, recv_buffer};
+
+                        if ((response->tipo == Nack) && (response->sequencia == seq))
+                            send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0);
+                        else if ((response->tipo == Ack) && (response->sequencia == seq)) {
+                            std::cout << "Recebeu Ack do " << std::bitset<4>(response->sequencia) << std::endl;
+                            break;
+                        }
+                    }
+                }
+            }
+            
             seq = (seq + 1) % 16;
-            n++;
-                
             delete msg;
         }
 
         unsigned int remainder = size % MAX_DATA_SIZE;
 
         if (remainder > 0) {
-            memcpy(sub_buffer, &buffer[MAX_DATA_SIZE * i], remainder);
+            memcpy(sub_buffer, &send_buffer[MAX_DATA_SIZE * i], remainder);
             msg = new Mensagem{Dados, seq, (unsigned char) remainder, sub_buffer};
             seq = (seq + 1) % 16;
-            n++;
 
             msg->imprimeCamposMsg();
 
@@ -72,8 +85,6 @@ int main (int argc, char **argv) {
     msg = new Mensagem{Fim, 16};
     send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0);
     delete msg;
-
-    std::cout << n << std::endl;
 
     return 0;
 }
