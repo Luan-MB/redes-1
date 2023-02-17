@@ -18,8 +18,9 @@ int main () {
 
     unsigned int retval;
     unsigned char seq{0x0};
+    long long n{0};
 
-    FILE *arq = fopen("vasco.mp3", "wq");
+    FILE *arq = fopen("vascoletra.txt", "wb");
     Mensagem *msg;
 
     while (true) {
@@ -34,8 +35,15 @@ int main () {
                 
                 if ((msg->tipo == Dados) && (msg->sequencia == seq)) {
 
-                    fwrite(msg->dados, 1, msg->tamanho, arq);
+                    unsigned char crc = msg->crc8();
+                    if (crc != msg->crc) {
+                        std::cout << "Crc original: " << std::bitset<8>(msg->crc) << std::endl << std::endl;
+                        std::cout << "Crc falso: " << std::bitset<8>(crc) << std::endl << std::endl;
+                    }
+
+                    std::cout << fwrite(msg->dados, 1, msg->tamanho, arq) << std::endl;
                     seq = ((seq + 1) % 16);
+                    n++;
                     delete msg;
 
                 } else if (msg->tipo == Fim) {
@@ -48,5 +56,6 @@ int main () {
     }
 
     fclose(arq);
+    std::cout << n << std::endl;
     return 0;
 }

@@ -5,7 +5,9 @@
 
 Mensagem::Mensagem(const unsigned char tipo, const unsigned char tamanho)
     : marcadorInicio{0x7e}, tipo{tipo}, sequencia{0x0}, dados{0}, tamanho{tamanho}
-{}
+{
+    this->crc = this->crc8();
+}
 
 Mensagem::Mensagem(const unsigned int tamanho, const char *pacote)
     : dados{0}
@@ -28,6 +30,8 @@ Mensagem::Mensagem(const unsigned char tipo,
 {
     if (tamanho < 16) this->tamanho = 16;
     memcpy(this->dados, &dados[0], tamanho);
+
+    this->crc = this->crc8();
 }
 
 void Mensagem::imprimeCamposMsg() const {
@@ -57,4 +61,16 @@ char *Mensagem::montaPacote() const {
     pacote[3 + this->tamanho] = this->crc;
     
     return pacote;
+}
+
+unsigned char Mensagem::crc8 () {
+
+    unsigned char crc = 0;
+    for (size_t i = 0; i < this->tamanho; i++) {
+        crc ^= this->dados[i];
+        for (int j = 0; j < 8; j++) {
+            crc = (crc & 0x80) ? (crc << 1) ^ 0x9B : (crc << 1);
+        }
+    }
+    return crc;
 }

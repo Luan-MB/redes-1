@@ -22,6 +22,7 @@ int main (int argc, char **argv) {
     int retval;
 
     FILE *arq = fopen(argv[1], "rb");
+    long long n{0};
 
     Mensagem *msg;
     unsigned char seq{0x0};
@@ -41,6 +42,7 @@ int main (int argc, char **argv) {
                 perror("send()");
 
             seq = (seq + 1) % 16;
+            n++;
                 
             delete msg;
         }
@@ -51,6 +53,9 @@ int main (int argc, char **argv) {
             memcpy(sub_buffer, &buffer[MAX_DATA_SIZE * i], remainder);
             msg = new Mensagem{Dados, seq, (unsigned char) remainder, sub_buffer};
             seq = (seq + 1) % 16;
+            n++;
+
+            msg->imprimeCamposMsg();
 
             if ((retval = send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0)) >= 0) {
                 fprintf(stderr, "SEND (%d bytes):\n", retval);
@@ -67,6 +72,8 @@ int main (int argc, char **argv) {
     msg = new Mensagem{Fim, 16};
     send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0);
     delete msg;
+
+    std::cout << n << std::endl;
 
     return 0;
 }

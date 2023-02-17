@@ -27,6 +27,8 @@ class Mensagem {
         void imprimeCamposMsg() const;
         char *montaPacote() const;
 
+        unsigned char crc8();
+
         unsigned char marcadorInicio: 8;
         unsigned char tipo: 6;
         unsigned char sequencia: 4;
@@ -34,5 +36,4 @@ class Mensagem {
         char dados[MAX_DATA_SIZE];
         unsigned char crc: 8;
 };
-
 #endif
