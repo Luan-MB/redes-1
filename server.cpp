@@ -1,8 +1,10 @@
-#include "raw_socket.h"
-#include "Mensagem.hpp"
 #include <cstdio>
 #include <bitset>
 #include <bits/stdc++.h>
+
+#include "raw_socket.h"
+#include "Mensagem.hpp"
+#include "Controller.hpp"
 
 int main () {
 
@@ -12,19 +14,19 @@ int main () {
         return 1;
     }
 
-    struct timeval timeout = { .tv_sec = 1 };
-    setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char*) &timeout, sizeof(timeout));
+/*     struct timeval timeout = { .tv_sec = 5 };
+    setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char*) &timeout, sizeof(timeout)); */
 
     printf("Escutando...\n");
 
-    char *buffer = (char *) malloc(67);
+    char *buffer = (char *) malloc(MAX_MSG_SIZE);
     unsigned int retval;
 
     Mensagem *msg, *response;
 
     while (true) {
 
-        if ((retval = recv(socket, buffer, 67, 0)) > 0) {
+        if ((retval = Controller::recvMessage(socket, buffer)) > 0) {
             if (buffer[0] == 0x7e) {
 
                 msg = new Mensagem{retval, buffer};
@@ -40,7 +42,7 @@ int main () {
                     FILE *arq = fopen(nome, "wb");
 
                     while (true) {
-                        if ((retval = recv(socket, buffer, 67, 0)) > 0) {
+                        if ((retval = Controller::recvMessage(socket, buffer)) > 0) {
                             if (buffer[0] == 0x7e) {
                                 
                                 #ifdef DEBUG
@@ -61,7 +63,7 @@ int main () {
                                         fwrite(msg->dados, 1, msg->tamanho, arq);
                                         response = new Mensagem{Ack, seq, 16};
 
-                                        if ((retval = send(socket, response->montaPacote(), response->getTamanhoPacote(), 0)) >= 0) {
+                                        if ((retval = Controller::sendMessage(socket, response)) >= 0) {
                                             fprintf(stderr, "SEND (%d bytes):\n", retval);
                                             seq = (seq + 1) % 16;
                                         } else
@@ -81,6 +83,8 @@ int main () {
                     }
 
                     fclose(arq);
+                
+                    free(nome);
                 }
             }
         }

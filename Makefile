@@ -2,7 +2,7 @@ CC     = g++
 CFLAGS = -Wall
 
 PROG = client server
-OBJS = raw_socket.o Mensagem.o
+OBJS = raw_socket.o Mensagem.o Controller.o
 
 .PHONY: clean purge all
 

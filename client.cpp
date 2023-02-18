@@ -3,35 +3,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <bitset>
-#include <sys/time.h>
 
 #include "Mensagem.hpp"
+#include "Controller.hpp"
 #include "raw_socket.h"
-
-long long timestamp() {
-    struct timeval tp;
-    gettimeofday(&tp, NULL);
-    return tp.tv_sec*1000 + tp.tv_usec/1000;
-}
- 
-int valid_protocol(char* buffer, int tamanho_buffer) {
-    if (tamanho_buffer <= 0) { return 0; }
-    // insira a sua validação de protocolo aqui
-    return buffer[0] == 0x7e;
-}
- 
-// retorna -1 se deu timeout, ou quantidade de bytes lidos
-int receive_message(int socket, int timeoutMillis, char* buffer, int tamanho_buffer) {
-    long long start = timestamp();
-    struct timeval timeout = { .tv_sec = 0, .tv_usec = timeoutMillis * 1000 };
-    setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char*) &timeout, sizeof(timeout));
-    int bytes_lidos;
-    do {
-        bytes_lidos = recv(socket, buffer, tamanho_buffer, 0);
-        if (valid_protocol(buffer, bytes_lidos)) { return bytes_lidos; }
-    } while (timestamp() - start <= timeoutMillis);
-    return -1;
-}
 
 int main () {
 
@@ -41,99 +16,113 @@ int main () {
         return 1;
     }
 
-    printf("Escutando...\n");
+    printf("Conectado...\n");
 
-    char send_buffer[3780];
-    size_t size;
-    unsigned int retval;
+    char opt;
 
-    char *recv_buffer = (char *) malloc(67);
-    
-    std::string file_name, file_path;
+    while (true) {
 
-    std::cout << std::endl << "Caminho do arquivo: ";
-    std::cin >> file_path;
+        std::cout << std::endl << "a) Enviar arquivo" << std::endl
+                << "q) Sair" << std::endl;
+        std::cin >> opt;
 
-    std::cout << std::endl << "Nome do arquivo: ";
-    std::cin >> file_name;
+        if (opt == 'a') {
 
-    std::cout << std::endl;
+            char send_buffer[3780];
+            size_t size;
+            unsigned int retval;
+            char *recv_buffer = (char *) malloc(MAX_MSG_SIZE);
+            
+            std::string file_name, file_path;
 
-/*     Mensagem inicio{Inicio, 16};
-    if ((retval = send(socket, inicio.montaPacote(), inicio.getTamanhoPacote(), 0)) >= 0) {
-        fprintf(stderr, "SEND (%d bytes):\n", retval);
-    } else
-        perror("send()"); */
+            std::cout << std::endl << "Caminho do arquivo: ";
+            std::cin >> file_path;
 
-    Mensagem media{Midia, (unsigned char) file_name.length(), file_name.c_str()};
-    if ((retval = send(socket, media.montaPacote(), media.getTamanhoPacote(), 0)) >= 0) {
-        fprintf(stderr, "SEND (%d bytes):\n", retval);
-    } else
-        perror("send()");
+            std::cout << std::endl << "Nome do arquivo: ";
+            std::cin >> file_name;
 
-    FILE *arq = fopen(file_path.c_str(), "rb");
+            std::cout << std::endl;
 
-    Mensagem *msg, *response;
-    unsigned char seq{0x0};
-    char sub_buffer[MAX_DATA_SIZE];
-    unsigned int i;
-    
-    while (size = fread(send_buffer, 1, 3780, arq)) {
-        unsigned int n_packs = (size / MAX_DATA_SIZE);
+        /*     Mensagem inicio{Inicio, 16};
+            if ((retval = send(socket, inicio.montaPacote(), inicio.getTamanhoPacote(), 0)) >= 0) {
+                fprintf(stderr, "SEND (%d bytes):\n", retval);
+            } else
+                perror("send()"); */
 
-        for (i=0; i<n_packs; ++i) {
-            memcpy(sub_buffer, &send_buffer[MAX_DATA_SIZE * i], MAX_DATA_SIZE);
-            msg = new Mensagem{Dados, seq, MAX_DATA_SIZE, sub_buffer};
-
-            if ((retval = send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0)) >= 0) {
+            Mensagem media{Midia, (unsigned char) file_name.length(), file_name.c_str()};
+            if ((retval = Controller::sendMessage(socket, &media)) >= 0) {
                 fprintf(stderr, "SEND (%d bytes):\n", retval);
             } else
                 perror("send()");
 
-            while (true) {
-                if ((retval = receive_message(socket, 300, recv_buffer, 67)) == 20) {
-                    response = new Mensagem{retval, recv_buffer};
+            FILE *arq = fopen(file_path.c_str(), "rb");
 
-                    if ((response->tipo == Ack) && (response->sequencia == seq)) {
-                        seq = (seq + 1) % 16;
-                        delete response;
-                        break;
-                    }
-                } else if (retval == -1) {
+            Mensagem *msg, *response;
+            unsigned char seq{0x0};
+            char sub_buffer[MAX_DATA_SIZE];
+            unsigned int i;
+            
+            while (size = fread(send_buffer, 1, 3780, arq)) {
+                unsigned int n_packs = (size / MAX_DATA_SIZE);
 
-                    if ((retval = send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0)) >= 0) {
+                for (i=0; i<n_packs; ++i) {
+                    memcpy(sub_buffer, &send_buffer[MAX_DATA_SIZE * i], MAX_DATA_SIZE);
+                    msg = new Mensagem{Dados, seq, MAX_DATA_SIZE, sub_buffer};
+
+                    if ((retval = Controller::sendMessage(socket, msg)) >= 0) {
                         fprintf(stderr, "SEND (%d bytes):\n", retval);
                     } else
                         perror("send()");
+
+                    while (true) {
+                        if ((retval = Controller::recvAck(socket, recv_buffer)) == 20) {
+                            response = new Mensagem{retval, recv_buffer};
+
+                            if ((response->tipo == Ack) && (response->sequencia == seq)) {
+                                seq = (seq + 1) % 16;
+                                delete response;
+                                break;
+                            }
+                        } else if (retval == -1) {
+
+                            if ((retval = Controller::sendMessage(socket, msg)) >= 0) {
+                                fprintf(stderr, "SEND (%d bytes):\n", retval);
+                            } else
+                                perror("send()");
+                        }
+                    }
+                
+                    delete msg;
+                }
+
+                unsigned int remainder = size % MAX_DATA_SIZE;
+
+                if (remainder > 0) {
+                    memcpy(sub_buffer, &send_buffer[MAX_DATA_SIZE * i], remainder);
+                    msg = new Mensagem{Dados, seq, (unsigned char) remainder, sub_buffer};
+                    seq = (seq + 1) % 16;
+
+                    if ((retval = Controller::sendMessage(socket, msg)) >= 0) {
+                        fprintf(stderr, "SEND (%d bytes):\n", retval);
+                    } else
+                        perror("send()");
+
+                    delete msg;
                 }
             }
-        
-            delete msg;
-        }
 
-        unsigned int remainder = size % MAX_DATA_SIZE;
+            fclose(arq);
 
-        if (remainder > 0) {
-            memcpy(sub_buffer, &send_buffer[MAX_DATA_SIZE * i], remainder);
-            msg = new Mensagem{Dados, seq, (unsigned char) remainder, sub_buffer};
-            seq = (seq + 1) % 16;
-
-            if ((retval = send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0)) >= 0) {
+            Mensagem fim{Fim, 16};
+            if ((retval = Controller::sendMessage(socket, &fim)) >= 0) {
                 fprintf(stderr, "SEND (%d bytes):\n", retval);
             } else
                 perror("send()");
-
-            delete msg;
+        } else if (opt == 'q') {
+            std::cout << "Saindo...'\n";
+            break;
         }
     }
-
-    fclose(arq);
-
-    Mensagem fim{Fim, 16};
-    if ((retval = send(socket, fim.montaPacote(), fim.getTamanhoPacote(), 0)) >= 0) {
-        fprintf(stderr, "SEND (%d bytes):\n", retval);
-    } else
-        perror("send()");
 
     return 0;
 }

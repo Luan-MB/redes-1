@@ -3,6 +3,7 @@
 
 #include <iostream>
 
+#define MAX_MSG_SIZE 67
 #define MAX_DATA_SIZE 63
 
 enum Tipos {
