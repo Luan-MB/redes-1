@@ -18,20 +18,22 @@ int main () {
 
     printf("Conectado...\n");
 
+    FILE *log = fopen("client.log", "w");
+    if (!log) {
+        std::cerr << "Falha ao criar arquivo de log" << std::endl;
+        return 1;
+    }
+
     char opt;
 
     while (true) {
 
         std::cout << std::endl << "a) Enviar arquivo" << std::endl
+                << "i) Inserir mensagem" << std::endl
                 << "q) Sair" << std::endl;
         std::cin >> opt;
 
         if (opt == 'a') {
-
-            char send_buffer[3780];
-            size_t size;
-            unsigned int retval;
-            char *recv_buffer = (char *) malloc(MAX_MSG_SIZE);
             
             std::string file_name, file_path;
 
@@ -43,86 +45,110 @@ int main () {
 
             std::cout << std::endl;
 
-        /*     Mensagem inicio{Inicio, 16};
-            if ((retval = send(socket, inicio.montaPacote(), inicio.getTamanhoPacote(), 0)) >= 0) {
-                fprintf(stderr, "SEND (%d bytes):\n", retval);
-            } else
-                perror("send()"); */
-
-            Mensagem media{Midia, (unsigned char) file_name.length(), file_name.c_str()};
-            if ((retval = Controller::sendMessage(socket, &media)) >= 0) {
-                fprintf(stderr, "SEND (%d bytes):\n", retval);
-            } else
-                perror("send()");
-
             FILE *arq = fopen(file_path.c_str(), "rb");
+            if (!arq) {
+                std::cerr << "Falha ao abrir o arquivo: " << file_path << std::endl;
+            } else {
 
-            Mensagem *msg, *response;
-            unsigned char seq{0x0};
-            char sub_buffer[MAX_DATA_SIZE];
-            unsigned int i;
+                char send_buffer[3780];
+                size_t size;
+                unsigned int retval;
+                char *recv_buffer = (char *) malloc(MAX_MSG_SIZE);
+
+                /*     Mensagem inicio{Inicio, 16};
+                if ((retval = send(socket, inicio.montaPacote(), inicio.getTamanhoPacote(), 0)) >= 0) {
+                    fprintf(stderr, "SEND (%d bytes):\n", retval);
+                } else
+                    perror("send()"); */
+
+                Mensagem media{Midia, (unsigned char) file_name.length(), file_name.c_str()};
+                if ((retval = Controller::sendMessage(socket, &media)) >= 0) {
+                    fprintf(stderr, "SEND (%d bytes):\n", retval);
+                } else
+                    perror("send()");
+
+                Mensagem *msg, *response;
+                unsigned char seq{0x0};
+                char sub_buffer[MAX_DATA_SIZE];
+                unsigned int i;
             
-            while (size = fread(send_buffer, 1, 3780, arq)) {
-                unsigned int n_packs = (size / MAX_DATA_SIZE);
+                while (size = fread(send_buffer, 1, 3780, arq)) {
+                    unsigned int n_packs = (size / MAX_DATA_SIZE);
 
-                for (i=0; i<n_packs; ++i) {
-                    memcpy(sub_buffer, &send_buffer[MAX_DATA_SIZE * i], MAX_DATA_SIZE);
-                    msg = new Mensagem{Dados, seq, MAX_DATA_SIZE, sub_buffer};
+                    for (i=0; i<n_packs; ++i) {
+                        memcpy(sub_buffer, &send_buffer[MAX_DATA_SIZE * i], MAX_DATA_SIZE);
+                        msg = new Mensagem{Dados, seq, MAX_DATA_SIZE, sub_buffer};
 
-                    if ((retval = Controller::sendMessage(socket, msg)) >= 0) {
-                        fprintf(stderr, "SEND (%d bytes):\n", retval);
-                    } else
-                        perror("send()");
+                        if ((retval = Controller::sendMessage(socket, msg)) >= 0)
+                            fprintf(log, "SEND (%d bytes): seq = %d, tipo = Dados\n", retval, seq);
 
-                    while (true) {
-                        if ((retval = Controller::recvAck(socket, recv_buffer)) == 20) {
-                            response = new Mensagem{retval, recv_buffer};
+                        while (true) {
+                            if ((retval = Controller::recvAck(socket, recv_buffer)) == 20) {
+                                response = new Mensagem{retval, recv_buffer};
 
-                            if ((response->tipo == Ack) && (response->sequencia == seq)) {
-                                seq = (seq + 1) % 16;
-                                delete response;
-                                break;
+                                if ((response->tipo == Ack) && (response->sequencia == seq)) {
+                                    fprintf(log, "RECV (%d bytes): seq = %d, tipo = Ack\n", retval, seq);
+                                    seq = (seq + 1) % 16;
+                                    delete response;
+                                    break;
+                                } else if ((response->tipo == Nack) && (response->sequencia == seq)) {
+                                    fprintf(log, "RECV (%d bytes): seq = %d, tipo = Nack\n", retval, seq);
+                                    if ((retval = Controller::sendMessage(socket, msg)) >= 0)
+                                        fprintf(log, "RE-SEND (%d bytes): seq = %d, tipo = Dados\n", retval, seq);
+                                    delete response;
+                                }
+                            } else if (retval == -1) {
+
+                                if ((retval = Controller::sendMessage(socket, msg)) >= 0)
+                                    fprintf(log, "RE-SEND (%d bytes): seq = %d, tipo = Dados\n", retval, seq);
                             }
-                        } else if (retval == -1) {
-
-                            if ((retval = Controller::sendMessage(socket, msg)) >= 0) {
-                                fprintf(stderr, "SEND (%d bytes):\n", retval);
-                            } else
-                                perror("send()");
                         }
+                    
+                        delete msg;
                     }
-                
-                    delete msg;
+
+                    unsigned int remainder = size % MAX_DATA_SIZE;
+
+                    if (remainder > 0) {
+                        memcpy(sub_buffer, &send_buffer[MAX_DATA_SIZE * i], remainder);
+                        msg = new Mensagem{Dados, seq, (unsigned char) remainder, sub_buffer};
+                        seq = (seq + 1) % 16;
+
+                        if ((retval = Controller::sendMessage(socket, msg)) >= 0) {
+                            fprintf(stderr, "SEND (%d bytes):\n", retval);
+                        } else
+                            perror("send()");
+
+                        delete msg;
+                    }
                 }
 
-                unsigned int remainder = size % MAX_DATA_SIZE;
+                fclose(arq);
 
-                if (remainder > 0) {
-                    memcpy(sub_buffer, &send_buffer[MAX_DATA_SIZE * i], remainder);
-                    msg = new Mensagem{Dados, seq, (unsigned char) remainder, sub_buffer};
-                    seq = (seq + 1) % 16;
-
-                    if ((retval = Controller::sendMessage(socket, msg)) >= 0) {
-                        fprintf(stderr, "SEND (%d bytes):\n", retval);
-                    } else
-                        perror("send()");
-
-                    delete msg;
-                }
+                Mensagem fim{Fim, 16};
+                if ((retval = Controller::sendMessage(socket, &fim)) >= 0) {
+                    fprintf(stderr, "SEND (%d bytes):\n", retval);
+                } else
+                    perror("send()");
             }
 
-            fclose(arq);
+        } else if (opt == 'i') {
+            
+            std::string message, eol;
 
-            Mensagem fim{Fim, 16};
-            if ((retval = Controller::sendMessage(socket, &fim)) >= 0) {
-                fprintf(stderr, "SEND (%d bytes):\n", retval);
-            } else
-                perror("send()");
+            std::cout << std::endl << "Insira a mensagem: ";
+            
+            std::getline(std::cin, eol);
+            std::getline(std::cin, message);
+
+            std::cout << message << std::endl;
+
         } else if (opt == 'q') {
-            std::cout << "Saindo...'\n";
+            std::cout << "Saindo...\n";
             break;
         }
     }
 
+    fclose(log);
     return 0;
 }

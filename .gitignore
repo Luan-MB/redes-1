@@ -3,3 +3,5 @@ a.out
 client
 server
 *.txt
+testes/
+*.log

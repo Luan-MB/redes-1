@@ -2,6 +2,11 @@
 #include "raw_socket.h"
 #include <sys/time.h>
 
+int valid_protocol(char* buffer, int tamanho_buffer) {
+    if (tamanho_buffer <= 0) { return 0; }
+    return buffer[0] == 0x7e;
+}
+
 int Controller::sendMessage(int socket, Mensagem* msg) {
     return send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0);
 }
@@ -14,11 +19,6 @@ long long timestamp() {
     struct timeval tp;
     gettimeofday(&tp, NULL);
     return tp.tv_sec*1000 + tp.tv_usec/1000;
-}
- 
-int valid_protocol(char* buffer, int tamanho_buffer) {
-    if (tamanho_buffer <= 0) { return 0; }
-    return buffer[0] == 0x7e;
 }
 
 int Controller::recvAck(int socket, char *recv_buffer) {

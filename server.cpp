@@ -31,61 +31,65 @@ int main () {
 
                 msg = new Mensagem{retval, buffer};
 
-                if (msg->tipo == Midia) {
+                    if (msg->tipo == Midia) {
 
-                    char *nome = (char *) malloc (msg->tamanho);
+                        char *nome = (char *) malloc (msg->tamanho);
 
-                    memcpy(nome, msg->dados, msg->tamanho);
+                        memcpy(nome, msg->dados, msg->tamanho);
 
-                    unsigned char seq{0x0};
+                        unsigned char seq{0x0};
 
-                    FILE *arq = fopen(nome, "wb");
+                        FILE *arq = fopen(nome, "wb");
 
-                    while (true) {
-                        if ((retval = Controller::recvMessage(socket, buffer)) > 0) {
-                            if (buffer[0] == 0x7e) {
-                                
-                                #ifdef DEBUG
-                                fprintf(stderr, "RECV (%d bytes):\n", retval);
-                                #endif
-                                
-                                msg = new Mensagem{retval, buffer};
-                                
-                                if (msg->tipo == Dados) {
+                        while (true) {
+                            if ((retval = Controller::recvMessage(socket, buffer)) > 0) {
+                                if (buffer[0] == 0x7e) {
+                                    
+                                    #ifdef DEBUG
+                                    fprintf(stderr, "RECV (%d bytes):\n", retval);
+                                    #endif
+                                    
+                                    msg = new Mensagem{retval, buffer};
+                                    
+                                    if (msg->tipo == Dados) {
 
-                                    if (msg->sequencia == seq) {
-                                        unsigned char crc = msg->crc8();
-                                        if (crc != msg->crc) {
-                                            std::cout << "Crc original: " << std::bitset<8>(msg->crc) << std::endl << std::endl;
-                                            std::cout << "Crc falso: " << std::bitset<8>(crc) << std::endl << std::endl;
+                                        if (msg->sequencia == seq) {
+                                            unsigned char crc = msg->crc8();
+                                            if (crc != msg->crc) {
+                                                response = new Mensagem{Nack, seq, 16};
+                                                if ((retval = Controller::sendMessage(socket, response)) >= 0) {
+                                                    fprintf(stderr, "SEND (%d bytes):\n", retval);
+                                                } else
+                                                    perror("send()");
+                                            } else {
+
+                                                fwrite(msg->dados, 1, msg->tamanho, arq);
+                                                response = new Mensagem{Ack, seq, 16};
+
+                                                if ((retval = Controller::sendMessage(socket, response)) >= 0) {
+                                                    fprintf(stderr, "SEND (%d bytes):\n", retval);
+                                                    seq = (seq + 1) % 16;
+                                                } else
+                                                    perror("send()");
+                                            }
                                         }
 
-                                        fwrite(msg->dados, 1, msg->tamanho, arq);
-                                        response = new Mensagem{Ack, seq, 16};
-
-                                        if ((retval = Controller::sendMessage(socket, response)) >= 0) {
-                                            fprintf(stderr, "SEND (%d bytes):\n", retval);
-                                            seq = (seq + 1) % 16;
-                                        } else
-                                            perror("send()");
+                                    } else if (msg->tipo == Fim) {
+                                        delete msg;
+                                        break;
                                     }
 
-                                } else if (msg->tipo == Fim) {
                                     delete msg;
-                                    break;
                                 }
-
-                                delete msg;
+                            } else {
+                                std::cout << "Timeout\n";
                             }
-                        } else {
-                            std::cout << "Timeout\n";
                         }
-                    }
 
-                    fclose(arq);
-                
-                    free(nome);
-                }
+                        fclose(arq);
+                    
+                        free(nome);
+                    }
             }
         }
     }
