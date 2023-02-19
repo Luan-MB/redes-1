@@ -26,18 +26,43 @@ int main () {
 
     while (true) {
 
-        if ((retval = Controller::recvMessage(socket, buffer)) > 0) {
+        if ((retval = Controller::recvMessage(socket, buffer)) == 20) {
             if (buffer[0] == 0x7e) {
 
+                unsigned char seq{0x0};
+
                 msg = new Mensagem{retval, buffer};
+                if ((msg->tipo == Inicio) && (msg->sequencia == seq)) {
+                    response = new Mensagem{Ack, seq, 16};
+
+                    if ((retval = Controller::sendMessage(socket, response)) >= 0) {
+                        fprintf(stderr, "SEND (%d bytes):\n", retval);
+                        seq = (seq + 1) % 16;
+                    }
+
+                    while (true) {
+                        if ((retval = Controller::recvMessage(socket, buffer)) > 0) {
+
+                            msg = new Mensagem{retval, buffer};
+
+                            if (((msg->tipo == Midia) || (msg->tipo == Texto)) && (msg->sequencia == seq)) {
+                                response = new Mensagem{Ack, seq, 16};
+
+                                if ((retval = Controller::sendMessage(socket, response)) >= 0) {
+                                    fprintf(stderr, "SEND (%d bytes):\n", retval);
+                                    seq = (seq + 1) % 16;
+                                }
+
+                                break;
+                            }
+                        }
+                    }
 
                     if (msg->tipo == Midia) {
-
+                        
                         char *nome = (char *) malloc (msg->tamanho);
 
                         memcpy(nome, msg->dados, msg->tamanho);
-
-                        unsigned char seq{0x0};
 
                         FILE *arq = fopen(nome, "wb");
 
@@ -90,6 +115,7 @@ int main () {
                     
                         free(nome);
                     }
+                }
             }
         }
     }

@@ -54,21 +54,62 @@ int main () {
                 size_t size;
                 unsigned int retval;
                 char *recv_buffer = (char *) malloc(MAX_MSG_SIZE);
-
-                /*     Mensagem inicio{Inicio, 16};
-                if ((retval = send(socket, inicio.montaPacote(), inicio.getTamanhoPacote(), 0)) >= 0) {
-                    fprintf(stderr, "SEND (%d bytes):\n", retval);
-                } else
-                    perror("send()"); */
-
-                Mensagem media{Midia, (unsigned char) file_name.length(), file_name.c_str()};
-                if ((retval = Controller::sendMessage(socket, &media)) >= 0) {
-                    fprintf(stderr, "SEND (%d bytes):\n", retval);
-                } else
-                    perror("send()");
-
-                Mensagem *msg, *response;
+                Mensagem *response;
                 unsigned char seq{0x0};
+
+                Mensagem inicio{Inicio, seq, 16};
+                if ((retval = Controller::sendMessage(socket, &inicio)) >= 0)
+                    fprintf(log, "SEND (%d bytes): seq = %d, tipo = Inicio\n", retval, seq);
+
+                while (true) {
+                    if ((retval = Controller::recvAck(socket, recv_buffer)) == 20) {
+                        response = new Mensagem{retval, recv_buffer};
+
+                        if ((response->tipo == Ack) && (response->sequencia == seq)) {
+                            fprintf(log, "RECV (%d bytes): seq = %d, tipo = Ack\n", retval, seq);
+                            seq = (seq + 1) % 16;
+                            delete response;
+                            break;
+                        } else if ((response->tipo == Nack) && (response->sequencia == seq)) {
+                            fprintf(log, "RECV (%d bytes): tipo = Nack\n", retval);
+                            if ((retval = Controller::sendMessage(socket, &inicio)) >= 0)
+                                fprintf(log, "RE-SEND (%d bytes): tipo = Inicio\n", retval);
+                            delete response;
+                        }
+                    } else if (retval == -1) {
+
+                        if ((retval = Controller::sendMessage(socket, &inicio)) >= 0)
+                            fprintf(log, "RE-SEND (%d bytes): tipo = Inicio\n", retval);
+                    }
+                }
+
+                Mensagem media{Midia, seq, (unsigned char) file_name.length(), file_name.c_str()};
+                if ((retval = Controller::sendMessage(socket, &media)) >= 0)
+                    fprintf(log, "SEND (%d bytes): seq = %d, tipo = Media\n", retval, seq);
+
+                while (true) {
+                    if ((retval = Controller::recvAck(socket, recv_buffer)) == 20) {
+                        response = new Mensagem{retval, recv_buffer};
+
+                        if ((response->tipo == Ack) && (response->sequencia == seq)) {
+                            fprintf(log, "RECV (%d bytes): seq = %d, tipo = Ack\n", retval, seq);
+                            delete response;
+                            seq = (seq + 1) % 16;
+                            break;
+                        } else if ((response->tipo == Nack) && (response->sequencia == seq)) {
+                            fprintf(log, "RECV (%d bytes): tipo = Nack\n", retval);
+                            if ((retval = Controller::sendMessage(socket, &media)) >= 0)
+                                fprintf(log, "RE-SEND (%d bytes): tipo = Media\n", retval);
+                            delete response;
+                        }
+                    } else if (retval == -1) {
+
+                        if ((retval = Controller::sendMessage(socket, &media)) >= 0)
+                            fprintf(log, "RE-SEND (%d bytes): tipo = Media\n", retval);
+                    }
+                }
+
+                Mensagem *msg;
                 char sub_buffer[MAX_DATA_SIZE];
                 unsigned int i;
             

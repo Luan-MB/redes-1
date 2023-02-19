@@ -5,3 +5,5 @@ server
 *.txt
 testes/
 *.log
+*.jpeg
+*.mp3
