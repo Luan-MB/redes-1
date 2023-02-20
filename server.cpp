@@ -130,6 +130,14 @@ int main () {
                             }
 
                             fclose(arq);
+
+                            time_t now = time(0);
+                            tm *ltm = localtime(&now);
+
+                            printf("\033[1;35m[%02d-%02d-%d  %02d:%02d:%02d]<client>: \033[0m", ltm->tm_mday, 
+                            ltm->tm_mon + 1, 1900 + ltm->tm_year, 5+ltm->tm_hour, 30+ltm->tm_min, ltm->tm_sec);
+                            std::cout << "Arquivo recebido! Pode ser encontrado em " 
+                            << file_name << std::endl << std::endl;
                         }
                     
                     } else if (msg->tipo == Texto) {
