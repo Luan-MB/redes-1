@@ -15,7 +15,8 @@ enum Tipos {
     Inicio = 0x1D,
     Fim = 0x0F,
     Dados = 0x0D,
-    Mask = 0x0E
+    Mask = 0x0E,
+    Quit = 0x1F
 };
 
 enum Erros {

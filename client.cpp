@@ -283,7 +283,6 @@ int main () {
                     msg = new Mensagem{Texto, seq, (unsigned char) remaining_size, message_part.c_str()};
                 }
                 
-                msg->imprimeCamposMsg();
                 if ((retval = Controller::sendMessage(socket, msg)) >= 0)
                     fprintf(log, "SEND (%d bytes): seq = %02d, tipo = TEXTO\n", retval, seq);
 
@@ -319,6 +318,9 @@ int main () {
             fprintf(log, "----- FIM ENVIO DE TEXTO -----\n\n");
 
         } else if (opt == 'q') {
+
+            Mensagem sair{Quit, 16};
+            if (Controller::sendMessage(socket, &sair) >= 0)
                 printf("\033[1;36m\nEncerrando...\n\033[0m");
             break;
         }

@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <bitset>
 #include <bits/stdc++.h>
+#include <ctime>
 
 #include "raw_socket.h"
 #include "Mensagem.hpp"
@@ -14,7 +15,13 @@ int main () {
         return 1;
     }
 
-    printf("Escutando...\n");
+    printf("\033[1;36mEscutando...\n\n\033[0m");
+
+    FILE *log = fopen("server.log", "w");
+    if (!log) {
+        std::cerr << "\033[31mFalha ao criar arquivo de log do server!\033[0m" << std::endl;
+        return 1;
+    }
 
     char *buffer = (char *) malloc(MAX_MSG_SIZE);
     unsigned int retval;
@@ -28,12 +35,14 @@ int main () {
 
                 unsigned char seq{0x0};
 
+                fprintf(log, "RECV (%d bytes): seq = %02d, tipo = Inicio\n", retval, seq);
+
                 msg = new Mensagem{retval, buffer};
                 if ((msg->tipo == Inicio) && (msg->sequencia == seq)) {
                     response = new Mensagem{Ack, seq, 16};
 
                     if ((retval = Controller::sendMessage(socket, response)) >= 0) {
-                        fprintf(stderr, "SEND (%d bytes):\n", retval);
+                        fprintf(log, "SEND (%d bytes): seq = %02d, tipo Ack\n", retval, seq);
                         seq = (seq + 1) % 16;
                     }
 
@@ -56,10 +65,9 @@ int main () {
                         if (!arq) {
                             
                             response = new Mensagem{Erro, seq, 1, Caminho};
-                            response->imprimeCamposMsg();
 
                             if ((retval = Controller::sendMessage(socket, response)) >= 0) {
-                                fprintf(stderr, "SEND (%d bytes):\n", retval);
+                                fprintf(log, "SEND (%d bytes): seq = %02d, tipo = Erro\n", retval, seq);
                             }
 
                             delete response;
@@ -69,7 +77,7 @@ int main () {
                             response = new Mensagem{Ack, seq, 16};
 
                             if ((retval = Controller::sendMessage(socket, response)) >= 0) {
-                                fprintf(stderr, "SEND (%d bytes):\n", retval);
+                                fprintf(log, "SEND (%d bytes): seq = %02d, tipo Ack\n", retval, seq);
                                 seq = (seq + 1) % 16;
                             }
 
@@ -94,20 +102,17 @@ int main () {
                                                 unsigned char crc = msg->crc8();
                                                 if (crc != msg->crc) {
                                                     response = new Mensagem{Nack, seq, 16};
-                                                    if ((retval = Controller::sendMessage(socket, response)) >= 0) {
-                                                        fprintf(stderr, "SEND (%d bytes):\n", retval);
-                                                    } else
-                                                        perror("send()");
+                                                    if ((retval = Controller::sendMessage(socket, response)) >= 0)
+                                                        fprintf(log, "SEND (%d bytes): seq = %02d, tipo Nack\n", retval, seq);
+
                                                 } else {
 
                                                     fwrite(msg->dados, 1, msg->tamanho, arq);
                                                     response = new Mensagem{Ack, seq, 16};
 
-                                                    if ((retval = Controller::sendMessage(socket, response)) >= 0) {
-                                                        fprintf(stderr, "SEND (%d bytes):\n", retval);
+                                                    if ((retval = Controller::sendMessage(socket, response)) >= 0)
+                                                        fprintf(log, "SEND (%d bytes): seq = %02d, tipo Ack\n", retval, seq);
                                                         seq = (seq + 1) % 16;
-                                                    } else
-                                                        perror("send()");
                                                 }
                                                 
                                             } else if (msg->tipo == Fim) {
@@ -129,10 +134,18 @@ int main () {
                     
                     } else if (msg->tipo == Texto) {
 
+                        response = new Mensagem{Ack, seq, 16};
+
+                        if ((retval = Controller::sendMessage(socket, response)) >= 0) {
+                            fprintf(log, "SEND (%d bytes): seq = %02d, tipo Ack\n", retval, seq);
+                            seq = (seq + 1) % 16;
+                        }
+
                         std::string message, sub_message;
 
                         sub_message = msg->dados;
                         message += sub_message.substr(0, msg->tamanho);
+                        
                         delete msg;
 
                         while (true) {
@@ -142,7 +155,6 @@ int main () {
                                     msg = new Mensagem{retval, buffer};
 
                                     if (msg->sequencia == seq) {
-                                        msg->imprimeCamposMsg();
                                         if (msg->tipo == Texto) {
                                             sub_message = msg->dados;
                                             message += sub_message.substr(0, msg->tamanho);
@@ -152,7 +164,7 @@ int main () {
                                             response = new Mensagem{Ack, seq, 16};
 
                                             if ((retval = Controller::sendMessage(socket, response)) >= 0) {
-                                                fprintf(stderr, "SEND (%d bytes):\n", retval);
+                                                fprintf(log, "SEND (%d bytes): seq = %02d, tipo Ack\n", retval, seq);
                                                 seq = (seq + 1) % 16;
                                             }
                                         } else if (msg->tipo == Fim) {
@@ -164,12 +176,22 @@ int main () {
                             }
                         }
 
+                        time_t now = time(0);
+                        tm *ltm = localtime(&now);
+
+                        printf("\033[1;35m[%02d-%02d-%d  %02d:%02d:%02d]<client>: \033[0m", ltm->tm_mday, 
+                        ltm->tm_mon + 1, 1900 + ltm->tm_year, 5+ltm->tm_hour, 30+ltm->tm_min, ltm->tm_sec);
                         std::cout << message  << std::endl;
                     }
+                } else if (msg->tipo == Quit) {
+                    break;
                 }
             }
         }
     }
+
+    printf("\033[1;36m\nEncerrando...\n\033[0m");
+    fclose(log);
 
     return 0;
 }
