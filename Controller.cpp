@@ -11,6 +11,34 @@ int Controller::sendMessage(int socket, Mensagem* msg) {
     return send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0);
 }
 
+void Controller::maskMessage(Mensagem *msg) {
+
+    if (msg->tipo != Mask)
+        msg->tipo = Mask;
+    
+    for (int i=0; i<msg->tamanho; ++i) {
+        msg->dados[i] ^= 0xFF;
+    }
+}
+
+int Controller::resendMessage(int socket, Mensagem* msg) {
+
+    bool mask = false;
+
+    for (int i=0; i<msg->tamanho; ++i) {
+        if ((msg->dados[i] == -127) || (msg->dados[i] == -120)) { // 0x81 e 0x88
+            mask = true;
+            break;
+        }
+    }
+
+    if (mask) {
+        Controller::maskMessage(msg);
+    }
+
+    return sendMessage(socket, msg);
+}
+
 int Controller::recvMessage(int socket, char *recv_buffer) {
     return recv(socket, recv_buffer, MAX_MSG_SIZE, 0);
 }

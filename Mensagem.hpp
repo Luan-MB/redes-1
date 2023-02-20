@@ -14,7 +14,13 @@ enum Tipos {
     Erro = 0x1E,
     Inicio = 0x1D,
     Fim = 0x0F,
-    Dados = 0x0D
+    Dados = 0x0D,
+    Mask = 0x0E
+};
+
+enum Erros {
+    Tamanho = 0x65,
+    Caminho = 0x66
 };
 
 class Mensagem {
@@ -23,6 +29,7 @@ class Mensagem {
         Mensagem(const unsigned char, const unsigned char);
         Mensagem(const unsigned char, const unsigned char, const unsigned char);
         Mensagem(const unsigned char, const unsigned char, const char *);
+        Mensagem(const unsigned char, const unsigned char, const unsigned char, Erros);
         Mensagem(const unsigned char, const unsigned char, const unsigned char, const char *);
 
         unsigned int getTamanhoPacote() const;

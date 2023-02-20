@@ -37,6 +37,15 @@ Mensagem::Mensagem(const unsigned char tipo,
 Mensagem::Mensagem(const unsigned char tipo,
                 const unsigned char sequencia,
                 const unsigned char tamanho,
+                Erros erro)
+    : marcadorInicio{0x7e}, tipo{tipo}, sequencia{sequencia}, tamanho{tamanho}, dados{0}
+{
+    this->dados[0] = erro;
+}
+
+Mensagem::Mensagem(const unsigned char tipo,
+                const unsigned char sequencia,
+                const unsigned char tamanho,
                 const char *dados)
     : marcadorInicio{0x7e}, tipo{tipo}, sequencia{sequencia}, tamanho{tamanho}, dados{0}
 {

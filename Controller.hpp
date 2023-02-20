@@ -3,11 +3,13 @@
 
 #include "Mensagem.hpp"
 
-#define TIMEOUT 300
+#define TIMEOUT 500
 
 class Controller {
     public:
         static int sendMessage(int, Mensagem*);
+        static void maskMessage(Mensagem *);
+        static int resendMessage(int, Mensagem*);
         static int recvMessage(int, char *);
         static int recvAck(int, char *);
 };
