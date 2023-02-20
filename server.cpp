@@ -60,11 +60,10 @@ int main () {
 
                     if (msg->tipo == Midia) {
                         
-                        char *nome = (char *) malloc (msg->tamanho);
+                        std::string file_name = msg->dados;
+                        file_name = file_name.substr(0, msg->tamanho);
 
-                        memcpy(nome, msg->dados, msg->tamanho);
-
-                        FILE *arq = fopen(nome, "wb");
+                        FILE *arq = fopen(file_name.c_str(), "wb");
 
                         while (true) {
                             if ((retval = Controller::recvMessage(socket, buffer)) > 0) {
@@ -113,7 +112,43 @@ int main () {
 
                         fclose(arq);
                     
-                        free(nome);
+                    } else if (msg->tipo == Texto) {
+
+                        std::string message, sub_message;
+
+                        sub_message = msg->dados;
+                        message += sub_message.substr(0, msg->tamanho);
+                        delete msg;
+
+                        while (true) {
+                            if ((retval = Controller::recvMessage(socket, buffer)) > 0) {
+                                if (buffer[0] == 0x7e) {
+                                    
+                                    msg = new Mensagem{retval, buffer};
+
+                                    if (msg->sequencia == seq) {
+                                        if (msg->tipo == Texto) {
+                                            sub_message = msg->dados;
+                                            message += sub_message.substr(0, msg->tamanho);
+
+                                            delete msg;
+                                            
+                                            response = new Mensagem{Ack, seq, 16};
+
+                                            if ((retval = Controller::sendMessage(socket, response)) >= 0) {
+                                                fprintf(stderr, "SEND (%d bytes):\n", retval);
+                                                seq = (seq + 1) % 16;
+                                            }
+                                        } else if (msg->tipo == Fim) {
+                                            delete msg;
+                                            break;
+                                        }
+                                    }   
+                                }
+                            }
+                        }
+
+                        std::cout << message  << std::endl;
                     }
                 }
             }

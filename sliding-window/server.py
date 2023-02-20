@@ -1,28 +1,56 @@
 import socket
-def server(host = 'localhost', port=8082):
-    data_payload = 2048 #The maximum amount of data to be received at once
-    # Create a TCP socket
-    sock = socket.socket(socket.AF_INET,  socket.SOCK_STREAM)
-    # Enable reuse address/port 
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    # Bind the socket to the port
-    server_address = (host, port)
-    print ("Starting up echo server  on %s port %s" % server_address)
-    sock.bind(server_address)
-    # Listen to clients, argument specifies the max no. of queued connections
-    sock.listen(5) 
-    i = 0
-    while True: 
-        print ("Waiting to receive message from client")
-        client, address = sock.accept() 
-        data = client.recv(data_payload) 
-        if data:
-            print ("Data: %s" %data)
-            client.send(data)
-            print ("sent %s bytes back to %s" % (data, address))
-            # end connection
-            client.close()
-            i+=1
-            if i>=3: break           
 
-server()
+# Initialize the server socket
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind(('localhost', 8080))
+server_socket.listen()
+
+# Wait for a client to connect
+print("Waiting for a client to connect...")
+client_socket, client_address = server_socket.accept()
+print(f"Client {client_address} has connected.")
+
+# Initialize variables
+expected_seq_num = 0
+window_size = 4
+buffer = []
+
+while True:
+    # Receive data from client
+    data = client_socket.recv(1024)
+    if not data:
+        break
+    seq_num, message = data.decode().split(",")
+    seq_num = int(seq_num)
+
+    # If the received packet has the expected sequence number
+    if seq_num == expected_seq_num:
+        print(f"Received packet with sequence number {seq_num}")
+        expected_seq_num += 1
+        buffer.append(message)
+
+        # Send an acknowledgment packet
+        ack_packet = str(expected_seq_num).encode()
+        client_socket.send(ack_packet)
+        print(f"Sent ACK for sequence number {expected_seq_num}")
+
+        # Flush buffer
+        while buffer and buffer[0] is not None:
+            print(f"Delivered message: {buffer.pop(0)}")
+
+    # If the received packet has a sequence number outside of the window
+    elif seq_num < expected_seq_num - window_size or seq_num >= expected_seq_num + window_size:
+        print(f"Discarded packet with out-of-order sequence number {seq_num}")
+        ack_packet = str(expected_seq_num).encode()
+        client_socket.send(ack_packet)
+        print(f"Sent duplicate ACK for sequence number {expected_seq_num}")
+
+    # If the received packet has a sequence number within the window, but not the expected sequence number
+    else:
+        print(f"Discarded packet with sequence number {seq_num}")
+        ack_packet = str(expected_seq_num).encode()
+        client_socket.send(ack_packet)
+        print(f"Sent duplicate ACK for sequence number {expected_seq_num}")
+
+# Close the server socket
+server_socket.close()
