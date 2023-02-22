@@ -26,6 +26,7 @@ enum Erros {
 
 class Mensagem {
     public:
+        Mensagem();
         Mensagem(const unsigned int, const char *);
         Mensagem(const unsigned char, const unsigned char);
         Mensagem(const unsigned char, const unsigned char, const unsigned char);

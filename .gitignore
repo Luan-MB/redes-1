@@ -7,5 +7,5 @@ testes/
 *.log
 *.jpeg
 *.mp3
-sliding-window/
+sliding-window/*
 *.jpg

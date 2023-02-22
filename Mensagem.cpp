@@ -3,6 +3,8 @@
 #include <bitset>
 #include <bits/stdc++.h>
 
+Mensagem::Mensagem() {}
+
 Mensagem::Mensagem(const unsigned int tamanho, const char *pacote)
     : dados{0}
 {

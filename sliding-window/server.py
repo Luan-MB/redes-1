@@ -39,7 +39,7 @@ while True:
             print(f"Delivered message: {buffer.pop(0)}")
 
     # If the received packet has a sequence number outside of the window
-    elif seq_num < expected_seq_num - window_size or seq_num >= expected_seq_num + window_size:
+    """ elif seq_num < expected_seq_num - window_size or seq_num >= expected_seq_num + window_size:
         print(f"Discarded packet with out-of-order sequence number {seq_num}")
         ack_packet = str(expected_seq_num).encode()
         client_socket.send(ack_packet)
@@ -50,7 +50,7 @@ while True:
         print(f"Discarded packet with sequence number {seq_num}")
         ack_packet = str(expected_seq_num).encode()
         client_socket.send(ack_packet)
-        print(f"Sent duplicate ACK for sequence number {expected_seq_num}")
+        print(f"Sent duplicate ACK for sequence number {expected_seq_num}") """
 
 # Close the server socket
 server_socket.close()
