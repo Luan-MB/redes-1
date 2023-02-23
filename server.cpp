@@ -189,16 +189,24 @@ int main () {
                                     if (msg->sequencia == seq) {
                                         if (msg->tipo == Texto) {
                                             fprintf(log, "RECV (%d bytes): seq = %02d, tipo = TEXTO\n", msg->tamanho, seq);
-                                            sub_message = msg->dados;
-                                            message += sub_message.substr(0, msg->tamanho);
 
-                                            delete msg;
-                                            
-                                            response = new Mensagem{Ack, seq};
+                                            unsigned char crc = msg->crc8();
+                                            if (crc != msg->crc) {
+                                                response = new Mensagem{Nack, seq};
+                                                if ((retval = Controller::sendMessage(socket, response)) >= 0)
+                                                    fprintf(log, "SEND (%d bytes): seq = %02d, tipo NACK\n", 0, seq);
+                                            } else {
+                                                sub_message = msg->dados;
+                                                message += sub_message.substr(0, msg->tamanho);
 
-                                            if ((retval = Controller::sendMessage(socket, response)) >= 0) {
-                                                fprintf(log, "SEND (%d bytes): seq = %02d, tipo ACK\n", 0, seq);
-                                                seq = (seq + 1) % 16;
+                                                delete msg;
+                                                
+                                                response = new Mensagem{Ack, seq};
+
+                                                if ((retval = Controller::sendMessage(socket, response)) >= 0) {
+                                                    fprintf(log, "SEND (%d bytes): seq = %02d, tipo ACK\n", 0, seq);
+                                                    seq = (seq + 1) % 16;
+                                                }
                                             }
                                         } else if (msg->tipo == Fim) {
                                             delete msg;
