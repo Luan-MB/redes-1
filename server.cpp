@@ -50,7 +50,7 @@ int main () {
         }
     }
 
-    fprintf(log, "O usuario %s conectou-se ao server\n", user_name.c_str());
+    fprintf(log, "%s conectou-se ao server\n", user_name.c_str());
 
     while (true) {
 
@@ -59,14 +59,14 @@ int main () {
 
                 unsigned char seq{0x0};
 
-                fprintf(log, "RECV (%d bytes): seq = %02d, tipo = Inicio\n", retval, seq);
-
                 msg = new Mensagem{buffer};
                 if ((msg->tipo == Inicio) && (msg->sequencia == seq)) {
+                    fprintf(log, "\n----- INICIO RECEBIMENTO DE TRANSMISSAO -----\n");
+                    fprintf(log, "RECV (%d bytes): seq = %02d, tipo = INICIO\n", msg->tamanho, seq);
                     response = new Mensagem{Ack, seq};
 
                     if ((retval = Controller::sendMessage(socket, response)) >= 0) {
-                        fprintf(log, "SEND (%d bytes): seq = %02d, tipo Ack\n", retval, seq);
+                        fprintf(log, "SEND (%d bytes): seq = %02d, tipo ACK\n", response->tamanho, seq);
                         seq = (seq + 1) % 16;
                     }
 
@@ -82,6 +82,7 @@ int main () {
 
                     if (msg->tipo == Midia) {
                         
+                        fprintf(log, "RECV (%d bytes): seq = %02d, tipo = MIDIA\n", msg->tamanho, seq);
                         std::string file_name = msg->dados;
                         file_name = "downloads/" + file_name.substr(0, msg->tamanho);
 
@@ -91,7 +92,7 @@ int main () {
                             response = new Mensagem{Erro, seq, 1, Caminho};
 
                             if ((retval = Controller::sendMessage(socket, response)) >= 0) {
-                                fprintf(log, "SEND (%d bytes): seq = %02d, tipo = Erro\n", retval, seq);
+                                fprintf(log, "SEND (%d bytes): seq = %02d, tipo = ERRO\n", response->tamanho, seq);
                             }
 
                             delete response;
@@ -101,7 +102,7 @@ int main () {
                             response = new Mensagem{Ack, seq};
 
                             if ((retval = Controller::sendMessage(socket, response)) >= 0) {
-                                fprintf(log, "SEND (%d bytes): seq = %02d, tipo Ack\n", retval, seq);
+                                fprintf(log, "SEND (%d bytes): seq = %02d, tipo ACK\n", response->tamanho, seq);
                                 seq = (seq + 1) % 16;
                             }
 
@@ -109,25 +110,23 @@ int main () {
                                 if ((retval = Controller::recvMessage(socket, buffer)) >= 0) {
                                     if (buffer[0] == 0x7e) {
                                         
-                                        #ifdef DEBUG
-                                        fprintf(stderr, "RECV (%d bytes):\n", retval);
-                                        #endif
-                                        
                                         msg = new Mensagem{buffer};
                                         
                                         if (msg->sequencia == seq) {
 
                                             if (msg->tipo == Mask) {
+                                                fprintf(log, "RECV (%d bytes): seq = %02d, tipo = MASK\n", msg->tamanho, seq);
                                                 Controller::maskMessage(msg);
                                                 msg->tipo == Dados;
                                             }
 
                                             if (msg->tipo == Dados) {
+                                                fprintf(log, "RECV (%d bytes): seq = %02d, tipo = DADOS\n", msg->tamanho, seq);
                                                 unsigned char crc = msg->crc8();
                                                 if (crc != msg->crc) {
                                                     response = new Mensagem{Nack, seq};
                                                     if ((retval = Controller::sendMessage(socket, response)) >= 0)
-                                                        fprintf(log, "SEND (%d bytes): seq = %02d, tipo Nack\n", retval, seq);
+                                                        fprintf(log, "SEND (%d bytes): seq = %02d, tipo NACK\n", 0, seq);
 
                                                 } else {
 
@@ -135,12 +134,12 @@ int main () {
                                                     response = new Mensagem{Ack, seq};
 
                                                     if ((retval = Controller::sendMessage(socket, response)) >= 0)
-                                                        fprintf(log, "SEND (%d bytes): seq = %02d, tipo Ack\n", retval, seq);
+                                                        fprintf(log, "SEND (%d bytes): seq = %02d, tipo ACK\n", msg->tamanho, seq);
                                                         seq = (seq + 1) % 16;
                                                 }
                                                 
                                             } else if (msg->tipo == Fim) {
-                                                std::cout << "fim\n";
+                                                fprintf(log, "RECV (%d bytes): seq = %02d, tipo = FIM\n", 0, seq);
                                                 delete msg;
                                                 break;
                                             }
@@ -166,10 +165,11 @@ int main () {
                     
                     } else if (msg->tipo == Texto) {
 
+                        fprintf(log, "RECV (%d bytes): seq = %02d, tipo = TEXTO\n", msg->tamanho, seq);
                         response = new Mensagem{Ack, seq};
 
                         if ((retval = Controller::sendMessage(socket, response)) >= 0) {
-                            fprintf(log, "SEND (%d bytes): seq = %02d, tipo Ack\n", retval, seq);
+                            fprintf(log, "SEND (%d bytes): seq = %02d, tipo ACK\n", 0, seq);
                             seq = (seq + 1) % 16;
                         }
 
@@ -188,6 +188,7 @@ int main () {
 
                                     if (msg->sequencia == seq) {
                                         if (msg->tipo == Texto) {
+                                            fprintf(log, "RECV (%d bytes): seq = %02d, tipo = TEXTO\n", msg->tamanho, seq);
                                             sub_message = msg->dados;
                                             message += sub_message.substr(0, msg->tamanho);
 
@@ -196,7 +197,7 @@ int main () {
                                             response = new Mensagem{Ack, seq};
 
                                             if ((retval = Controller::sendMessage(socket, response)) >= 0) {
-                                                fprintf(log, "SEND (%d bytes): seq = %02d, tipo Ack\n", retval, seq);
+                                                fprintf(log, "SEND (%d bytes): seq = %02d, tipo ACK\n", 0, seq);
                                                 seq = (seq + 1) % 16;
                                             }
                                         } else if (msg->tipo == Fim) {
@@ -215,6 +216,8 @@ int main () {
                         ltm->tm_mon + 1, 1900 + ltm->tm_year, 5+ltm->tm_hour, 30+ltm->tm_min, ltm->tm_sec, user_name.c_str());
                         std::cout << message  << std::endl;
                     }
+
+                    fprintf(log, "----- FIM TRANSMISSAO -----\n\n");
                 } else if (msg->tipo == Quit) {
                     break;
                 }
