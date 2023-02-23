@@ -8,7 +8,7 @@ int valid_protocol(char* buffer, int tamanho_buffer) {
 }
 
 int Controller::sendMessage(int socket, Mensagem* msg) {
-    return send(socket, msg->montaPacote(), msg->getTamanhoPacote(), 0);
+    return send(socket, msg->montaPacote(), MSG_SIZE, 0);
 }
 
 void Controller::maskMessage(Mensagem *msg) {
@@ -40,7 +40,7 @@ int Controller::resendMessage(int socket, Mensagem* msg) {
 }
 
 int Controller::recvMessage(int socket, char *recv_buffer) {
-    return recv(socket, recv_buffer, MAX_MSG_SIZE, 0);
+    return recv(socket, recv_buffer, MSG_SIZE, 0);
 }
 
 long long timestamp() {
@@ -55,7 +55,7 @@ int Controller::recvAck(int socket, char *recv_buffer) {
     setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char*) &timeout, sizeof(timeout));
     int bytes_lidos;
     do {
-        bytes_lidos = recv(socket, recv_buffer, MAX_MSG_SIZE, 0);
+        bytes_lidos = recv(socket, recv_buffer, MSG_SIZE, 0);
         if (valid_protocol(recv_buffer, bytes_lidos)) { return bytes_lidos; }
     } while (timestamp() - start <= TIMEOUT);
     return -1;

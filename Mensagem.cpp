@@ -5,7 +5,7 @@
 
 Mensagem::Mensagem() {}
 
-Mensagem::Mensagem(const unsigned int tamanho, const char *pacote)
+Mensagem::Mensagem(const char *pacote)
     : dados{0}
 {
     this->marcadorInicio = pacote[0] & 0xff;
@@ -15,11 +15,11 @@ Mensagem::Mensagem(const unsigned int tamanho, const char *pacote)
 
     memcpy(this->dados, &pacote[3], this->tamanho);  
 
-    this->crc = pacote[tamanho-1];
+    this->crc = pacote[MSG_SIZE-1];
 }
 
-Mensagem::Mensagem(const unsigned char tipo, const unsigned char tamanho)
-    : marcadorInicio{0x7e}, tipo{tipo}, sequencia{0x0}, dados{0}, tamanho{tamanho}, crc{0x0}
+Mensagem::Mensagem(const unsigned char tipo, const unsigned char sequencia)
+    : marcadorInicio{0x7e}, tipo{tipo}, sequencia{sequencia}, dados{0}, tamanho{0x0}, crc{0x0}
 {}
 
 Mensagem::Mensagem(const unsigned char tipo, const unsigned char sequencia, const unsigned char tamanho)
@@ -56,13 +56,6 @@ Mensagem::Mensagem(const unsigned char tipo,
     this->crc = this->crc8();
 }
 
-unsigned int Mensagem::getTamanhoPacote() const {
-    if (this->tamanho < 16)
-        return 20;
-    else
-        return this->tamanho + 4;
-}
-
 void Mensagem::imprimeCamposMsg() const {
     std::cout << "Marcador inicio: " << std::bitset<8>(this->marcadorInicio) << std::endl;
     std::cout << "Tipo: " << std::bitset<6>(this->tipo) << std::endl;
@@ -79,19 +72,15 @@ void Mensagem::imprimeCamposMsg() const {
 }
 
 char *Mensagem::montaPacote() const {
-    char *pacote = (char *) malloc(4 + this->tamanho);
+    char *pacote = (char *) calloc(MSG_SIZE, 1);
     
     pacote[0] = this->marcadorInicio;
     pacote[1] = (this->tipo << 2) | ((this->sequencia >> 2) & 0x3);
     pacote[2] = ((this->sequencia & 0x3) << 6) | (this->tamanho);
 
-    if (this->tamanho < 16) {
-        memcpy(&pacote[3], this->dados, 16);
-        pacote[3 + 16] = this->crc;
-    } else {
-        memcpy(&pacote[3], this->dados, this->tamanho);
-        pacote[3 + this->tamanho] = this->crc;
-    }
+    memcpy(&pacote[3], this->dados, this->tamanho);
+
+    pacote[MSG_SIZE - 1] = this->crc;
     
     return pacote;
 }

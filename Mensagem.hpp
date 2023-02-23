@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-#define MAX_MSG_SIZE 67
+#define MSG_SIZE 67
 #define MAX_DATA_SIZE 63
 
 enum Tipos {
@@ -16,7 +16,8 @@ enum Tipos {
     Fim = 0x0F,
     Dados = 0x0D,
     Mask = 0x0E,
-    Quit = 0x1F
+    Quit = 0x1F,
+    Conexao = 0x0C
 };
 
 enum Erros {
@@ -27,14 +28,12 @@ enum Erros {
 class Mensagem {
     public:
         Mensagem();
-        Mensagem(const unsigned int, const char *);
+        Mensagem(const char *);
         Mensagem(const unsigned char, const unsigned char);
         Mensagem(const unsigned char, const unsigned char, const unsigned char);
         Mensagem(const unsigned char, const unsigned char, const char *);
         Mensagem(const unsigned char, const unsigned char, const unsigned char, Erros);
         Mensagem(const unsigned char, const unsigned char, const unsigned char, const char *);
-
-        unsigned int getTamanhoPacote() const;
 
         void imprimeCamposMsg() const;
         char *montaPacote() const;
